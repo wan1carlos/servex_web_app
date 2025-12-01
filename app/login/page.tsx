@@ -29,8 +29,7 @@ export default function LoginPage() {
 
     if (result.success) {
       toast.success('Login successful!');
-      const hasCart = localStorage.getItem('cart_no');
-      router.push(hasCart ? '/cart' : '/home');
+      router.push('/home');
     } else {
       toast.error(result.message || 'Login failed');
     }

@@ -5,17 +5,27 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Minus, Plus, Trash2, Tag, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/lib/cart-store';
+import { useAuth } from '@/lib/auth-store';
 import toast from 'react-hot-toast';
 
 export default function CartPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { cartData, items, loadCart, updateCartItem, isLoading } = useCart();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      toast.error('Please login to view your cart');
+      router.push('/login');
+      return;
+    }
+    
     loadCart();
-  }, [loadCart]);
+  }, [isAuthenticated, loadCart, router]);
 
   const handleUpdateQuantity = async (cartId: string, type: number) => {
     await updateCartItem(cartId, type);

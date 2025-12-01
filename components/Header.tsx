@@ -64,15 +64,17 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-4">
-            {/* Cart */}
-            <Link href="/cart" className="relative hover:text-pink-600">
-              <ShoppingCart className="w-6 h-6" />
-              {count > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {count}
-                </span>
-              )}
-            </Link>
+            {/* Cart - Only show when authenticated */}
+            {isAuthenticated && (
+              <Link href="/cart" className="relative hover:text-pink-600">
+                <ShoppingCart className="w-6 h-6" />
+                {count > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {count}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* User Menu */}
             {isAuthenticated && user ? (

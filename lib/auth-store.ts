@@ -78,6 +78,11 @@ export const useAuth = create<AuthState>()(
           userId: null,
           isAuthenticated: false,
         });
+        // Clear cart on logout
+        if (typeof window !== 'undefined') {
+          const { useCart } = require('./cart-store');
+          useCart.getState().clearCart();
+        }
       },
 
       updateUser: (user: User) => {
