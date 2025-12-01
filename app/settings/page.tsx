@@ -59,7 +59,15 @@ export default function SettingsPage() {
     try {
       setLoading(true);
       const userId = localStorage.getItem('user_id');
-      const response = await servexApi.updateInfo(formData, userId as string);
+      
+      // Convert plain object to FormData
+      const formDataObj = new FormData();
+      formDataObj.append('name', formData.name);
+      formDataObj.append('phone', formData.phone);
+      formDataObj.append('email', formData.email);
+      formDataObj.append('whatsapp_no', formData.whatsapp_no);
+      
+      const response = await servexApi.updateInfo(userId as string, formDataObj);
       
       if (response.msg === 'done') {
         toast.success('Profile updated successfully!');

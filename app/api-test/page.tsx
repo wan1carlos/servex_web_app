@@ -1,12 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import servexApi from '@/lib/api';
 
 export default function ApiTestPage() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localStorageValues, setLocalStorageValues] = useState({
+    lid: '',
+    city_id: '',
+    user_id: '',
+    cart_no: '',
+    current_lat: '',
+    current_lng: ''
+  });
+
+  useEffect(() => {
+    // Load localStorage values on client side only
+    setLocalStorageValues({
+      lid: localStorage.getItem('lid') || 'not set',
+      city_id: localStorage.getItem('city_id') || 'not set',
+      user_id: localStorage.getItem('user_id') || 'not set',
+      cart_no: localStorage.getItem('cart_no') || 'not set',
+      current_lat: localStorage.getItem('current_lat') || 'not set',
+      current_lng: localStorage.getItem('current_lng') || 'not set'
+    });
+  }, []);
 
   const testHomepage = async () => {
     setLoading(true);
@@ -66,12 +86,12 @@ export default function ApiTestPage() {
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 className="text-xl font-bold mb-4">Current LocalStorage Values:</h2>
         <div className="bg-gray-50 p-4 rounded text-sm space-y-1 font-mono">
-          <div>lid: {localStorage.getItem('lid') || 'not set'}</div>
-          <div>city_id: {localStorage.getItem('city_id') || 'not set'}</div>
-          <div>user_id: {localStorage.getItem('user_id') || 'not set'}</div>
-          <div>cart_no: {localStorage.getItem('cart_no') || 'not set'}</div>
-          <div>current_lat: {localStorage.getItem('current_lat') || 'not set'}</div>
-          <div>current_lng: {localStorage.getItem('current_lng') || 'not set'}</div>
+          <div>lid: {localStorageValues.lid}</div>
+          <div>city_id: {localStorageValues.city_id}</div>
+          <div>user_id: {localStorageValues.user_id}</div>
+          <div>cart_no: {localStorageValues.cart_no}</div>
+          <div>current_lat: {localStorageValues.current_lat}</div>
+          <div>current_lng: {localStorageValues.current_lng}</div>
         </div>
       </div>
 
