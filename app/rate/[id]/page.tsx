@@ -41,11 +41,17 @@ export default function RatePage() {
       setLoading(true);
       const userId = localStorage.getItem('user_id');
       
+      if (!userId) {
+        toast.error('Please login first');
+        router.push('/login');
+        return;
+      }
+      
       const ratingData = {
         comment: comment,
         user_id: userId,
         star: rating,
-        oid: params.id
+        oid: String(params.id)
       };
 
       await servexApi.rating(ratingData);
