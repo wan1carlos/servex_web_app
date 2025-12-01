@@ -20,7 +20,7 @@ export default function AccountPage() {
     const userId = localStorage.getItem('user_id');
     
     if (!userId || userId === 'null' || userId === 'undefined') {
-      toast.error('Please login to access this page');
+      toast.error('Please login to access this page.');
       router.push('/login');
       return;
     }
