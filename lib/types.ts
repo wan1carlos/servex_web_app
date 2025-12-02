@@ -22,6 +22,8 @@ export interface Store {
   cod: number;
   stripe_key?: string;
   razor_key?: string;
+  gcash_qr_image?: string;
+  gcash_enabled?: number;
   lat: string;
   lng: string;
   distance?: string;

@@ -45,6 +45,7 @@ interface OrderDetail {
   pay: number;
   ecash?: number;
   notes?: string;
+  payment_proof?: string;
   items: OrderItem[];
 }
 
@@ -71,7 +72,11 @@ export default function StoreOrderDetail() {
     const appText = localStorage.getItem('app_text');
 
     if (odata) {
-      setOrderData(JSON.parse(odata));
+      const parsedOrder = JSON.parse(odata);
+      console.log('Order Data:', parsedOrder);
+      console.log('Payment Method:', parsedOrder.pay);
+      console.log('Payment Proof:', parsedOrder.payment_proof);
+      setOrderData(parsedOrder);
     }
     if (sdata) {
       setStoreData(JSON.parse(sdata));
@@ -131,6 +136,7 @@ export default function StoreOrderDetail() {
       }
       return 'Paid with E-Cash';
     }
+    if (payType === 5) return 'GCash QR Payment';
     return 'Unknown';
   };
 
@@ -288,6 +294,35 @@ export default function StoreOrderDetail() {
                 Payment Method: <span className="font-medium">{getPaymentMethod(orderData.pay, orderData.ecash, orderData.payable)}</span>
               </span>
             </div>
+
+            {/* Show GCash Payment Proof - Debug info */}
+            {orderData.pay === 5 && (
+              <div className="border-t pt-4 mt-4">
+                <p className="text-sm text-gray-600 font-medium mb-3">Payment Proof:</p>
+                {orderData.payment_proof ? (
+                  <>
+                    <img 
+                      src={`https://bsitport2026.com/servex/${orderData.payment_proof}`}
+                      alt="Payment Proof" 
+                      className="w-full max-w-md rounded-lg border-2 border-gray-300"
+                      onError={(e) => {
+                        console.error('Failed to load image:', orderData.payment_proof);
+                        console.error('Attempted URL:', `https://bsitport2026.com/servex/${orderData.payment_proof}`);
+                        const img = e.target as HTMLImageElement;
+                        const errorMsg = document.createElement('p');
+                        errorMsg.className = 'text-sm text-red-500 mt-2';
+                        errorMsg.textContent = `Unable to load image: ${orderData.payment_proof}`;
+                        img.parentElement?.appendChild(errorMsg);
+                        img.style.display = 'none';
+                      }}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Path: {orderData.payment_proof}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No payment proof uploaded yet</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

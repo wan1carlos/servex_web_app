@@ -166,4 +166,20 @@ export const servexStoreApi = {
     const response = await storeApi.get(`makeStripePayment${data}&lid=${lid}`);
     return response.data;
   },
+
+  // GCash Settings
+  updateGcashSettings: async (data: FormData) => {
+    const userId = getLocalStorage('store_user_id');
+    const response = await storeApi.post(`updateGcashSettings?user_id=${userId}`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  getGcashSettings: async (storeId: string) => {
+    const response = await storeApi.get(`getGcashSettings/${storeId}`);
+    return response.data;
+  },
 };

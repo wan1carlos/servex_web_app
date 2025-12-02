@@ -22,7 +22,7 @@ export default function CheckoutPage() {
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedAddress, setSelectedAddress] = useState('');
   const [comment, setComment] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('1'); // 1=COD, 2=Stripe, 3=Razor, etc
+  const [paymentMethod, setPaymentMethod] = useState('1'); // 1=COD, 2=Stripe, 3=Razor, 5=GCash
   const [useEcash, setUseEcash] = useState(false);
   const [ecashAmount, setEcashAmount] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -32,6 +32,9 @@ export default function CheckoutPage() {
   const [expMonth, setExpMonth] = useState('');
   const [expYear, setExpYear] = useState('');
   const [cvv, setCvv] = useState('');
+
+  // GCash fields
+  const [gcashProof, setGcashProof] = useState<File | null>(null);
 
   useEffect(() => {
     loadData();
@@ -56,6 +59,11 @@ export default function CheckoutPage() {
       if (text) setAppText(JSON.parse(text));
       if (setting) setSettings(JSON.parse(setting));
 
+      // Debug: Log checkout data to see store structure
+      const parsedData = JSON.parse(data);
+      console.log('Checkout Data:', parsedData);
+      console.log('Store from checkout:', parsedData.store || parsedData.data?.[0]);
+
       // Load user info and addresses
       const userId = localStorage.getItem('user_id');
       if (userId && userId !== 'null') {
@@ -73,6 +81,16 @@ export default function CheckoutPage() {
           if (response.address.length > 0) {
             setSelectedAddress(response.address[0].id);
           }
+        }
+
+        // Store data comes from userInfo response
+        if (response.store) {
+          console.log('Store data from userInfo:', response.store);
+          // Update checkoutData with store info
+          setCheckoutData((prev: any) => ({
+            ...prev,
+            store: response.store
+          }));
         }
       }
       
@@ -124,6 +142,7 @@ export default function CheckoutPage() {
     if (orderDate === '2' && (!selectedDate || !selectedTime)) return false;
     if (getTotalPayable() > 0 && !paymentMethod) return false;
     if (paymentMethod === '2' && (!cardNo || !expMonth || !expYear || !cvv)) return false;
+    if (paymentMethod === '5' && !gcashProof) return false; // GCash requires proof
     return true;
   };
 
@@ -136,7 +155,7 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
-      const orderData = {
+      const orderData: any = {
         payment: paymentMethod,
         cart_no: localStorage.getItem('cart_no'),
         payment_id: '0',
@@ -150,12 +169,29 @@ export default function CheckoutPage() {
         comment: comment
       };
 
-      const response = await servexApi.placeOrder(orderData);
-      
-      if (response.data) {
-        localStorage.setItem('order_data', JSON.stringify(response.data));
-        toast.success('Order placed successfully!');
-        router.push(`/order/${response.data.data.id}`);
+      // Handle GCash payment proof upload
+      if (paymentMethod === '5' && gcashProof) {
+        const formData = new FormData();
+        Object.keys(orderData).forEach(key => {
+          formData.append(key, orderData[key]);
+        });
+        formData.append('payment_proof', gcashProof);
+        
+        const response = await servexApi.placeOrder(formData);
+        
+        if (response.data) {
+          localStorage.setItem('order_data', JSON.stringify(response.data));
+          toast.success('Order placed successfully!');
+          router.push(`/order/${response.data.data.id}`);
+        }
+      } else {
+        const response = await servexApi.placeOrder(orderData);
+        
+        if (response.data) {
+          localStorage.setItem('order_data', JSON.stringify(response.data));
+          toast.success('Order placed successfully!');
+          router.push(`/order/${response.data.data.id}`);
+        }
       }
     } catch (error: any) {
       console.error('Error placing order:', error);
@@ -433,6 +469,76 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
+              )}
+
+              {/* GCash QR Payment */}
+              {(checkoutData?.store?.gcash_enabled === 1 || 
+                checkoutData?.data?.[0]?.gcash_enabled === 1 ||
+                settings?.gcash_enabled === 1) && (
+                <>
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition ${
+                      paymentMethod === '5'
+                        ? 'border-pink-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="payment"
+                      value="5"
+                      checked={paymentMethod === '5'}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                    />
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 3h18v18H3V3zm16 16V5H5v14h14zM7 7h10v10H7V7zm2 2v6h6V9H9z"/>
+                    </svg>
+                    <span className="flex-1 font-medium">GCash QR Payment</span>
+                  </label>
+
+                  {/* GCash QR and Upload Section */}
+                  {paymentMethod === '5' && (
+                    <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                      <div className="text-center">
+                        <p className="font-medium text-sm mb-3">Scan QR Code to Pay</p>
+                        {(checkoutData?.store?.gcash_qr_image || 
+                          checkoutData?.data?.[0]?.gcash_qr_image ||
+                          settings?.gcash_qr_image) && (
+                          <img 
+                            src={`https://bsitport2026.com/servex/${
+                              checkoutData?.store?.gcash_qr_image || 
+                              checkoutData?.data?.[0]?.gcash_qr_image ||
+                              settings?.gcash_qr_image
+                            }`}
+                            alt="GCash QR Code" 
+                            className="max-w-xs mx-auto rounded-lg border-2 border-gray-300"
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="border-t pt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Upload Proof of Payment *
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setGcashProof(e.target.files?.[0] || null)}
+                          className="w-full px-4 py-2 border rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-700"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Please upload a screenshot of your payment confirmation
+                        </p>
+                        {gcashProof && (
+                          <p className="text-sm text-green-600 mt-2">
+                            ✓ File selected: {gcashProof.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

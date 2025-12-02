@@ -47,6 +47,11 @@ export default function StoreAccount() {
   // Store status
   const [storeOpen, setStoreOpen] = useState(false);
   
+  // GCash settings
+  const [gcashEnabled, setGcashEnabled] = useState(false);
+  const [gcashQrImage, setGcashQrImage] = useState<File | null>(null);
+  const [currentGcashQr, setCurrentGcashQr] = useState('');
+  
   // Store items
   const [items, setItems] = useState<any[]>([]);
   
@@ -82,6 +87,10 @@ export default function StoreAccount() {
         setPerKm(data.per_km || '');
         setMaxKm(data.max_km || '');
         setStoreOpen(data.open === 0); // 0 = open, 1 = closed (inverted in API)
+        
+        // Load GCash settings
+        setGcashEnabled(data.gcash_enabled === 1);
+        setCurrentGcashQr(data.gcash_qr_image || '');
       }
       
       if (response.order) {
@@ -189,7 +198,34 @@ export default function StoreAccount() {
     }
   };
 
-  const toggleItemStatus = async (itemId: string, currentStatus: number) => {
+  const handleSaveGcashSettings = async () => {
+    try {
+      setSaving(true);
+      
+      const formData = new FormData();
+      if (gcashQrImage) {
+        formData.append('gcash_qr', gcashQrImage);
+      }
+      formData.append('gcash_enabled', gcashEnabled ? '1' : '0');
+      
+      const response = await servexStoreApi.updateGcashSettings(formData);
+      
+      if (response.data === 'done') {
+        toast.success('GCash settings updated successfully');
+        setGcashQrImage(null); // Clear file input
+        await loadAccountData(); // Reload to get new image path
+      } else {
+        toast.error('Failed to update GCash settings');
+      }
+    } catch (error) {
+      console.error('Error updating GCash settings:', error);
+      toast.error('Failed to update GCash settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleItemStatus = async (itemId: string, currentStatus: number) => {
     try {
       const newStatus = currentStatus === 1 ? 0 : 1;
       await servexStoreApi.changeStatus(itemId, newStatus);
@@ -416,6 +452,74 @@ export default function StoreAccount() {
                 </div>
               </div>
 
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-bold mb-4">GCash Payment Settings</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="gcash-enabled"
+                      checked={gcashEnabled}
+                      onChange={(e) => setGcashEnabled(e.target.checked)}
+                      className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <label htmlFor="gcash-enabled" className="text-sm font-medium text-gray-700">
+                      Enable GCash QR Payment
+                    </label>
+                  </div>
+
+                  {currentGcashQr && (
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-2">Current GCash QR Code:</p>
+                      <img 
+                        src={`https://bsitport2026.com/servex/${currentGcashQr}`}
+                        alt="Current GCash QR" 
+                        className="w-48 h-48 object-contain border rounded-lg"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {currentGcashQr ? 'Change GCash QR Code' : 'Upload GCash QR Code'}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setGcashQrImage(e.target.files?.[0] || null)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Upload your GCash QR code image (JPG, PNG)
+                    </p>
+                    {gcashQrImage && (
+                      <p className="text-sm text-green-600 mt-2">
+                        ✓ New file selected: {gcashQrImage.name}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleSaveGcashSettings}
+                    disabled={saving}
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center space-x-2"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Saving GCash Settings...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-5 h-5" />
+                        <span>Save GCash Settings</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
@@ -457,7 +561,7 @@ export default function StoreAccount() {
                       </div>
                     </div>
                     <button
-                      onClick={() => toggleItemStatus(item.id, item.status)}
+                      onClick={() => handleToggleItemStatus(item.id, item.status)}
                       className={`px-4 py-2 rounded-lg font-medium transition ${
                         item.status === 0
                           ? 'bg-green-100 text-green-700 hover:bg-green-200'
