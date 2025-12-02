@@ -180,6 +180,85 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Store Partner Section */}
+      <section className="py-20 bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-block bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                FOR STORE OWNERS
+              </div>
+              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
+                Grow Your Business with ServEx
+              </h2>
+              <p className="text-xl text-gray-600 mb-8">
+                Join Malolos' leading delivery platform and reach more customers in your barangay and beyond. Manage orders, track deliveries, and grow your revenue with our easy-to-use store dashboard.
+              </p>
+              <ul className="space-y-4 mb-8 text-gray-700">
+                <li className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-lg">Real-time order management dashboard</span>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-lg">Reach customers across all Malolos barangays</span>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-lg">Flexible delivery options - your riders or ours</span>
+                </li>
+                <li className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-lg">Easy setup with ongoing support</span>
+                </li>
+              </ul>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  href="/contact"
+                  className="bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-700 flex items-center justify-center space-x-2 shadow-lg transform hover:scale-105 transition"
+                >
+                  <Store className="w-5 h-5" />
+                  <span>Apply as Store Partner</span>
+                </Link>
+                <Link 
+                  href="/store/login"
+                  className="border-2 border-green-600 text-green-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-600 hover:text-white flex items-center justify-center space-x-2 transition"
+                >
+                  <span>Store Login</span>
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
+            <div>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-400 rounded-3xl blur-3xl opacity-30"></div>
+                <img 
+                  src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?w=600&h=600&fit=crop" 
+                  alt="Store Management" 
+                  className="relative rounded-3xl shadow-2xl"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
