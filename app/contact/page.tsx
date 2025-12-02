@@ -22,12 +22,38 @@ export default function ContactPage() {
     }
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          access_key: 'b6e66a6e-ac71-4ee5-a1f9-c6269712a3d9',
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject || 'New Contact Form Submission',
+          message: formData.message,
+          from_name: 'ServEx Contact Form'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Message sent successfully! We\'ll get back to you soon.');
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        toast.error('Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
       setLoading(false);
-      toast.success('Message sent successfully! We\'ll get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+    }
   };
 
   return (
@@ -56,8 +82,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
-                  <p className="text-gray-600">support@servex.com</p>
-                  <p className="text-gray-600">info@servex.com</p>
+                  <p className="text-gray-600">servex112825@gmail.com</p>
                 </div>
               </div>
 
@@ -67,8 +92,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Phone</h3>
-                  <p className="text-gray-600">+1 (555) 123-4567</p>
-                  <p className="text-gray-600">Mon-Fri, 9am-6pm EST</p>
+                  <p className="text-gray-600">+63 951 982 6577</p>
+                  <p className="text-gray-600">Mon-Fri, 9am-6pm</p>
                 </div>
               </div>
 
@@ -78,8 +103,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Address</h3>
-                  <p className="text-gray-600">123 Main Street</p>
-                  <p className="text-gray-600">New York, NY 10001</p>
+                  <p className="text-gray-600">Km. 44, McArthur Highway</p>
+                  <p className="text-gray-600">Barangay Longos, City of Malolos, Bulacan</p>
                 </div>
               </div>
             </div>

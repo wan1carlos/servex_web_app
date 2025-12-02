@@ -64,15 +64,15 @@ export default function Footer() {
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-center space-x-2">
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">support@servex.com</span>
+                <span className="text-sm">servex112825@gmail.com</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="w-4 h-4" />
-                <span className="text-sm">+1 (555) 123-4567</span>
+                <span className="text-sm">+63 951 982 6577</span>
               </li>
               <li className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4" />
-                <span className="text-sm">123 Main St, City, Country</span>
+                <span className="text-sm">Km. 44, McArthur Highway, Brgy. Longos, Malolos, Bulacan</span>
               </li>
             </ul>
           </div>

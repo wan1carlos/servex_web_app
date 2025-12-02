@@ -13,7 +13,7 @@ export default function SignupPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
+    phone: '09',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -24,6 +24,22 @@ export default function SignupPage() {
     
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    // Validate Philippine mobile number
+    if (!formData.phone.startsWith('09')) {
+      toast.error('Mobile number must start with 09');
+      return;
+    }
+
+    if (formData.phone.length !== 11) {
+      toast.error('Mobile number must be exactly 11 digits');
+      return;
+    }
+
+    if (!/^\d+$/.test(formData.phone)) {
+      toast.error('Mobile number must contain only digits');
       return;
     }
 
@@ -89,11 +105,28 @@ export default function SignupPage() {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    // Ensure it always starts with 09 and limit to 11 digits
+                    if (value.startsWith('09') && value.length <= 11) {
+                      setFormData({ ...formData, phone: value });
+                    } else if (value.length < 2) {
+                      setFormData({ ...formData, phone: '09' });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent deletion if cursor is at position 0 or 1 (the "09" part)
+                    const input = e.target as HTMLInputElement;
+                    if ((e.key === 'Backspace' || e.key === 'Delete') && input.selectionStart !== null && input.selectionStart <= 2) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="09XX XXX XXXX"
+                  maxLength={11}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">Must start with 09 and be 11 digits</p>
             </div>
 
             <div>
