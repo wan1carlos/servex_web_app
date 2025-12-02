@@ -9,6 +9,23 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Log the error for debugging
+    console.error('API Error:', error.message);
+    
+    // Handle network errors gracefully
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+      console.warn('Network error detected. Please check your internet connection.');
+    }
+    
+    // Still throw the error so it can be caught by the calling code
+    return Promise.reject(error);
+  }
+);
+
 // Helper to get localStorage items
 const getLocalStorage = (key: string, defaultValue: any = null) => {
   if (typeof window === 'undefined') return defaultValue;

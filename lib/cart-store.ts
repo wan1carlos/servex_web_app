@@ -62,7 +62,8 @@ export const useCart = create<CartState>()(
               count: response.data.count || 0,
               items: response.data.cart || []
             });
-            await get().getCartCount();
+            // Fetch updated cart count (ignore errors)
+            get().getCartCount().catch(() => {});
             return { success: true };
           } else if (response.data && response.data.error) {
             return { success: false, message: 'Item is out of stock' };
@@ -109,7 +110,8 @@ export const useCart = create<CartState>()(
               items: response.data.data || [],
               isLoading: false,
             });
-            await get().getCartCount();
+            // Fetch updated cart count (ignore errors)
+            get().getCartCount().catch(() => {});
           }
         } catch (error) {
           console.error('Update cart error:', error);
@@ -126,6 +128,8 @@ export const useCart = create<CartState>()(
           set({ count: response.data || 0 });
         } catch (error) {
           console.error('Get cart count error:', error);
+          // Set count to 0 on error to prevent UI issues
+          set({ count: 0 });
         }
       },
 

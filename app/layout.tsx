@@ -18,15 +18,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isStorePage = pathname?.startsWith('/store');
+  // Hide Header/Footer for store owner dashboard pages, but show for user-facing store product pages (/store/[id])
+  const isStoreOwnerPage = pathname?.startsWith('/store') && !pathname?.match(/^\/store\/\d+/);
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <title>ServEx - On-Demand Services & Delivery</title>
+        <meta name="description" content="Order from your favorite stores and get delivery to your doorstep" />
+      </head>
       <body className={inter.className} suppressHydrationWarning>
         <Toaster position="top-center" />
-        {!isStorePage && <Header />}
+        {!isStoreOwnerPage && <Header />}
         <main className="min-h-screen">{children}</main>
-        {!isStorePage && <Footer />}
+        {!isStoreOwnerPage && <Footer />}
       </body>
     </html>
   );

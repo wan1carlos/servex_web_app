@@ -19,7 +19,10 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
     initializeCart();
-    getCartCount();
+    // Call getCartCount with error handling
+    getCartCount().catch((error) => {
+      console.log('Cart count fetch failed, continuing with count=0');
+    });
   }, [initializeCart, getCartCount]);
 
   if (!mounted) return null;
