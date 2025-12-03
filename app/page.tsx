@@ -230,7 +230,7 @@ export default function LandingPage() {
               </ul>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
-                  href="/contact"
+                  href="/store/signup"
                   className="bg-green-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-green-700 flex items-center justify-center space-x-2 shadow-lg transform hover:scale-105 transition"
                 >
                   <Store className="w-5 h-5" />

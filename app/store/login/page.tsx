@@ -98,6 +98,15 @@ export default function StoreLoginPage() {
           </form>
 
           <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Don't have a store account?{' '}
+              <Link href="/store/signup" className="text-green-600 hover:underline font-medium">
+                Register Here
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-4 text-center">
             <Link 
               href="/" 
               className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800"
