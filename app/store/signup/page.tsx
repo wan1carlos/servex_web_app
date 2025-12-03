@@ -53,6 +53,9 @@ export default function StoreSignupPage() {
   
   // Bank transfer note
   const [bankNote, setBankNote] = useState('');
+  
+  // Business permit file
+  const [businessPermit, setBusinessPermit] = useState<File | null>(null);
 
   useEffect(() => {
     loadPlans();
@@ -98,6 +101,11 @@ export default function StoreSignupPage() {
       return;
     }
     
+    if (!businessPermit) {
+      toast.error('Please upload your business permit');
+      return;
+    }
+    
     if (!selectedPlanId) {
       toast.error('Please select a subscription plan');
       return;
@@ -123,22 +131,24 @@ export default function StoreSignupPage() {
     try {
       setLoading(true);
       
-      const signupData = {
-        data: {
-          name,
-          phone,
-          address,
-          password,
-          notes: bankNote
-        },
-        plan_id: selectedPlanId,
-        payment_method: selectedPlan?.price === 0 ? 2 : paymentMethod,
-        payment_id: selectedPlan?.price === 0 ? 'Trial_Pack' : '0'
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('data[name]', name);
+      formData.append('data[phone]', phone);
+      formData.append('data[address]', address);
+      formData.append('data[password]', password);
+      formData.append('data[notes]', bankNote);
+      formData.append('plan_id', selectedPlanId.toString());
+      formData.append('payment_method', (selectedPlan?.price === 0 ? 2 : paymentMethod).toString());
+      formData.append('payment_id', selectedPlan?.price === 0 ? 'Trial_Pack' : '0');
+      
+      if (businessPermit) {
+        formData.append('business_permit', businessPermit);
+      }
       
       // Note: In production, you would handle Stripe/Razor payments here
       // For now, we'll just send the signup request
-      const response = await servexStoreApi.signup(signupData);
+      const response = await servexStoreApi.signup(formData);
       
       if (response.data === 'done') {
         toast.success('Store registered successfully! Please wait for admin approval.');
@@ -251,6 +261,27 @@ export default function StoreSignupPage() {
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Permit * (PDF, JPG, PNG)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setBusinessPermit(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700"
+                  required
+                />
+                {businessPermit && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ File selected: {businessPermit.name}
+                  </p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Please upload your valid business permit (Max 5MB)
+                </p>
               </div>
             </div>
 
