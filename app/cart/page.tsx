@@ -137,7 +137,9 @@ export default function CartPage() {
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Delivery Charges</span>
-                  <span className="font-semibold">{cartData.currency}{cartData.d_charges || 0}</span>
+                  <span className="font-semibold text-sm">
+                    <span className="text-gray-500">(calculated at checkout)</span>
+                  </span>
                 </div>
                 
                 {cartData.discount > 0 && (
@@ -147,17 +149,18 @@ export default function CartPage() {
                   </div>
                 )}
                 
-                {cartData.tax_value > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">{cartData.tax_name || 'Tax'}</span>
-                    <span className="font-semibold">{cartData.currency}{cartData.tax_value}</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">VAT</span>
+                  <span className="font-semibold text-sm">
+                    <span className="text-gray-500">(calculated at checkout)</span>
+                  </span>
+                </div>
                 
                 <div className="border-t pt-3 flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="text-pink-600">{cartData.currency}{cartData.total || 0}</span>
+                  <span>Subtotal</span>
+                  <span className="text-pink-600">{cartData.currency}{cartData.item_total || 0}</span>
                 </div>
+                <p className="text-xs text-gray-500 text-center">+ delivery charges & tax at checkout</p>
               </div>
 
               <button
@@ -165,10 +168,11 @@ export default function CartPage() {
                   // Save checkout data to localStorage like mobile app does
                   const checkoutData = {
                     data: items,
-                    total: cartData.total,
-                    d_charges: cartData.d_charges,
+                    total: cartData.item_total,
+                    d_charges: 0,
                     discount: 0,
-                    currency: cartData.currency
+                    currency: cartData.currency,
+                    store: cartData.store
                   };
                   localStorage.setItem('checkout_data', JSON.stringify(checkoutData));
                   router.push('/checkout');

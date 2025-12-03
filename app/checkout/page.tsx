@@ -14,6 +14,9 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [appText, setAppText] = useState<any>({});
   const [settings, setSettings] = useState<any>({});
+  const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [taxValue, setTaxValue] = useState(0);
+  const [recalculating, setRecalculating] = useState(false);
   
   // Form state
   const [orderType, setOrderType] = useState('1'); // 1=Delivery, 2=Pickup
@@ -91,6 +94,13 @@ export default function CheckoutPage() {
             ...prev,
             store: response.store
           }));
+          // Calculate tax
+          if (response.store.tax_value && response.store.tax_value > 0) {
+            const parsedData = JSON.parse(data);
+            const itemTotal = parsedData.total || 0;
+            const calculatedTax = Math.round(itemTotal * response.store.tax_value / 100);
+            setTaxValue(calculatedTax);
+          }
         }
       }
       
@@ -108,11 +118,54 @@ export default function CheckoutPage() {
 
   const getTotal = () => {
     if (!checkoutData) return 0;
+    const itemTotal = checkoutData.total || 0;
     if (orderType === '2') { // Pickup - no delivery charges
-      return checkoutData.total - (checkoutData.d_charges || 0);
+      return itemTotal + taxValue;
     }
-    return checkoutData.total;
+    return itemTotal + deliveryCharges + taxValue;
   };
+
+  const recalculateCharges = async (addressId: string) => {
+    if (!addressId || orderType === '2') {
+      setDeliveryCharges(0);
+      return;
+    }
+
+    try {
+      setRecalculating(true);
+      const address = addresses.find(addr => addr.id == addressId);
+      if (!address) return;
+
+      // Store address lat/lng in localStorage for API call
+      const oldLat = localStorage.getItem('current_lat');
+      const oldLng = localStorage.getItem('current_lng');
+      localStorage.setItem('current_lat', address.lat);
+      localStorage.setItem('current_lng', address.lng);
+
+      // Fetch cart with new location to get updated delivery charges
+      const cartNo = localStorage.getItem('cart_no');
+      if (cartNo) {
+        const response = await servexApi.getCart(cartNo);
+        if (response.data) {
+          setDeliveryCharges(response.data.d_charges || 0);
+        }
+      }
+
+      // Restore original location
+      if (oldLat) localStorage.setItem('current_lat', oldLat);
+      if (oldLng) localStorage.setItem('current_lng', oldLng);
+    } catch (error) {
+      console.error('Error recalculating charges:', error);
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAddress && addresses.length > 0) {
+      recalculateCharges(selectedAddress);
+    }
+  }, [selectedAddress, orderType]);
 
   const handleUseEcash = () => {
     const newUseEcash = !useEcash;
@@ -155,6 +208,18 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
+      // Set the address coordinates temporarily for order placement
+      const oldLat = localStorage.getItem('current_lat');
+      const oldLng = localStorage.getItem('current_lng');
+      
+      if (orderType === '1' && selectedAddress) {
+        const address = addresses.find(addr => addr.id == selectedAddress);
+        if (address) {
+          localStorage.setItem('current_lat', address.lat);
+          localStorage.setItem('current_lng', address.lng);
+        }
+      }
+
       const orderData: any = {
         payment: paymentMethod,
         cart_no: localStorage.getItem('cart_no'),
@@ -193,8 +258,19 @@ export default function CheckoutPage() {
           router.push(`/order/${response.data.data.id}`);
         }
       }
+      
+      // Restore original location after order is placed
+      if (oldLat) localStorage.setItem('current_lat', oldLat);
+      if (oldLng) localStorage.setItem('current_lng', oldLng);
     } catch (error: any) {
       console.error('Error placing order:', error);
+      
+      // Restore location on error too
+      const oldLat = localStorage.getItem('current_lat');
+      const oldLng = localStorage.getItem('current_lng');
+      if (oldLat) localStorage.setItem('current_lat', oldLat);
+      if (oldLng) localStorage.setItem('current_lng', oldLng);
+      
       toast.error(error.response?.data?.message || 'Failed to place order');
     } finally {
       setLoading(false);
@@ -354,13 +430,47 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {/* Order Summary */}
+        <div className="bg-white rounded-xl shadow-sm p-4">
+          <h3 className="font-bold mb-4">Order Summary</h3>
+          
+          <div className="space-y-2 text-sm mb-4">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-semibold">{checkoutData.currency}{checkoutData.total || 0}</span>
+            </div>
+            
+            {orderType === '1' && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Delivery Charges</span>
+                <span className="font-semibold">
+                  {recalculating ? (
+                    <span className="text-xs text-gray-400">Calculating...</span>
+                  ) : (
+                    <span>{checkoutData.currency}{deliveryCharges}</span>
+                  )}
+                </span>
+              </div>
+            )}
+            
+            {taxValue > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">{checkoutData.store?.tax_name || 'VAT'}</span>
+                <span className="font-semibold">{checkoutData.currency}{taxValue}</span>
+              </div>
+            )}
+            
+            <div className="border-t pt-2 flex justify-between text-lg font-bold">
+              <span>Total</span>
+              <span className="text-pink-600">{checkoutData.currency}{getTotal()}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Payment Method */}
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="font-bold mb-2 flex items-center justify-between">
+          <h3 className="font-bold mb-2">
             <span>{appText.payment_method || 'Payment Method'}</span>
-            <span className="text-lg text-pink-600">
-              {settings.currency || '₱'}{getTotal().toFixed(2)}
-            </span>
           </h3>
 
           {/* eCash Option */}
