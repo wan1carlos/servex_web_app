@@ -132,17 +132,31 @@ export default function CartPage() {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">{cartData.currency}{cartData.sub_total}</span>
+                  <span className="font-semibold">{cartData.currency}{cartData.item_total || 0}</span>
                 </div>
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Delivery Charges</span>
-                  <span className="font-semibold">{cartData.currency}{cartData.d_charges}</span>
+                  <span className="font-semibold">{cartData.currency}{cartData.d_charges || 0}</span>
                 </div>
+                
+                {cartData.discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span className="font-semibold">-{cartData.currency}{cartData.discount}</span>
+                  </div>
+                )}
+                
+                {cartData.tax_value > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{cartData.tax_name || 'Tax'}</span>
+                    <span className="font-semibold">{cartData.currency}{cartData.tax_value}</span>
+                  </div>
+                )}
                 
                 <div className="border-t pt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-pink-600">{cartData.currency}{cartData.total}</span>
+                  <span className="text-pink-600">{cartData.currency}{cartData.total || 0}</span>
                 </div>
               </div>
 

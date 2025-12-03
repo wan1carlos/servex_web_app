@@ -69,11 +69,18 @@ export interface CartItem {
 export interface CartData {
   data: CartItem[];
   total: number;
-  sub_total: number;
+  item_total: number;
+  sub_total?: number;
   d_charges: number;
+  discount: number;
+  tax_name?: string;
+  tax_value: number;
   open: boolean;
   currency: string;
   store: Store;
+  date?: string;
+  hasOffer?: any;
+  pay_info?: string;
 }
 
 export interface Order {
