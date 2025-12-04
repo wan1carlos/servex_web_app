@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Settings, ShoppingBag, MapPin, Home, LogOut, Wallet, Gift } from 'lucide-react';
+import { ArrowLeft, Settings, ShoppingBag, MapPin, Home, LogOut } from 'lucide-react';
 import servexApi from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -86,29 +86,35 @@ export default function AccountPage() {
           <p className="text-white/80 mb-1">Welcome</p>
           <h1 className="text-4xl font-bold mb-4">{userData?.name || 'User'}</h1>
           
-          <div className="flex flex-wrap gap-2">
-            <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
-              <Wallet className="w-4 h-4" />
-              <span className="font-semibold">
-                {appText.ecash || 'eCash'}: ₱{userData?.wallet || '0'}
-              </span>
-            </div>
-            
-            {userData?.rcode && (
-              <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2">
-                <Gift className="w-4 h-4" />
-                <span className="font-semibold">
-                  {appText.ref_code || 'Referral Code'}: {userData.rcode}
-                </span>
+          {/* User Info Card */}
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-white/60 text-xs">Email</p>
+                  <p className="text-white font-medium">{userData?.email || 'Not provided'}</p>
+                </div>
               </div>
-            )}
+              
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-white/60 text-xs">Phone</p>
+                  <p className="text-white font-medium">{userData?.phone || 'Not provided'}</p>
+                </div>
+              </div>
+            </div>
           </div>
-          
-          {userData?.rcode && (
-            <p className="text-sm text-white/80 mt-3">
-              {appText.ref_code_desc || 'Share your referral code to earn eCash'}
-            </p>
-          )}
         </div>
       </div>
 

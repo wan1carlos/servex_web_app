@@ -107,8 +107,11 @@ export default function StoreDashboard() {
     const statusTexts: { [key: number]: { text: string; color: string } } = {
       0: { text: 'New Order', color: 'text-orange-600' },
       1: { text: 'Confirmed', color: 'text-green-600' },
+      2: { text: 'Cancelled', color: 'text-red-600' },
       3: { text: 'Delivery Assigned', color: 'text-blue-600' },
       4: { text: 'On the Way', color: 'text-purple-600' },
+      5: { text: 'Delivered', color: 'text-green-700' },
+      6: { text: 'Completed', color: 'text-green-700' },
     };
     return statusTexts[status] || { text: 'Unknown', color: 'text-gray-600' };
   };
