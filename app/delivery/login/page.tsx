@@ -11,13 +11,21 @@ export default function DeliveryLoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [text, setText] = useState<any>(null);
+  const [text, setText] = useState<any>({});
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
     // Load language text
     const appText = localStorage.getItem('app_text');
-    if (appText) {
-      setText(JSON.parse(appText));
+    if (appText && appText !== 'null') {
+      try {
+        setText(JSON.parse(appText));
+      } catch (error) {
+        console.error('Error parsing app text:', error);
+        setText({});
+      }
     }
 
     // Redirect if already authenticated
@@ -25,6 +33,14 @@ export default function DeliveryLoginPage() {
       router.push('/delivery/home');
     }
   }, [isAuthenticated, router]);
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +68,6 @@ export default function DeliveryLoginPage() {
       setLoading(false);
     }
   };
-
-  if (!text) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
