@@ -317,14 +317,22 @@ export default function LandingPage() {
                   <span className="text-lg">Motorcycle or bicycle - all welcome</span>
                 </li>
               </ul>
-              <Link 
-                href="/contact"
-                className="inline-flex items-center bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 shadow-lg transform hover:scale-105 transition"
-              >
-                <Bike className="w-5 h-5 mr-2" />
-                <span>Apply as a Rider</span>
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  href="/contact"
+                  className="inline-flex items-center bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 shadow-lg transform hover:scale-105 transition justify-center"
+                >
+                  <Bike className="w-5 h-5 mr-2" />
+                  <span>Apply as a Rider</span>
+                </Link>
+                <Link 
+                  href="/delivery/login"
+                  className="inline-flex items-center border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-600 hover:text-white transition justify-center"
+                >
+                  <span>Rider Login</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+              </div>
             </div>
           </div>
         </div>

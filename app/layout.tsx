@@ -20,6 +20,8 @@ export default function RootLayout({
   const pathname = usePathname();
   // Hide Header/Footer for store owner dashboard pages, but show for user-facing store product pages (/store/[id])
   const isStoreOwnerPage = pathname?.startsWith('/store') && !pathname?.match(/^\/store\/\d+/);
+  // Hide Header/Footer for delivery pages
+  const isDeliveryPage = pathname?.startsWith('/delivery');
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -29,9 +31,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Toaster position="top-center" />
-        {!isStoreOwnerPage && <Header />}
+        {!isStoreOwnerPage && !isDeliveryPage && <Header />}
         <main className="min-h-screen">{children}</main>
-        {!isStoreOwnerPage && <Footer />}
+        {!isStoreOwnerPage && !isDeliveryPage && <Footer />}
       </body>
     </html>
   );

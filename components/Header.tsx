@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, User, Menu, MapPin, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, User, MapPin, LogOut, Package } from 'lucide-react';
 import { useAuth } from '@/lib/auth-store';
 import { useCart } from '@/lib/cart-store';
 import { useApp } from '@/lib/app-store';
@@ -129,11 +129,6 @@ export default function Header() {
                 Login
               </Link>
             )}
-
-            {/* Mobile Menu */}
-            <button className="md:hidden">
-              <Menu className="w-6 h-6" />
-            </button>
           </div>
         </div>
       </div>
