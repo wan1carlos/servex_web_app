@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDeliveryAuth } from '@/lib/delivery-auth-store';
 import servexDeliveryApi from '@/lib/delivery-api';
@@ -35,7 +35,7 @@ interface OrderData {
   [key: string]: any;
 }
 
-export default function DeliveryDetailPage() {
+function DeliveryDetailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userId, isAuthenticated } = useDeliveryAuth();
@@ -300,5 +300,17 @@ export default function DeliveryDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DeliveryDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </div>
+    }>
+      <DeliveryDetailContent />
+    </Suspense>
   );
 }

@@ -146,10 +146,10 @@ export default function DeliveryAccountPage() {
               <div className="bg-gradient-to-r from-green-500 to-green-600 p-8 text-white">
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-green-600 text-3xl font-bold">
-                    {userData.name.charAt(0).toUpperCase()}
+                    {userData.name ? userData.name.charAt(0).toUpperCase() : 'D'}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{userData.name}</h2>
+                    <h2 className="text-2xl font-bold">{userData.name || 'Delivery Partner'}</h2>
                     <p className="text-green-100">{text.d_delivery_partner || 'Delivery Partner'}</p>
                   </div>
                 </div>
