@@ -14,17 +14,12 @@ interface UserData {
   [key: string]: any;
 }
 
-interface OrderStats {
-  total: number;
-  delivered: number;
-  [key: string]: any;
-}
-
 export default function DeliveryAccountPage() {
   const router = useRouter();
   const { userId, isAuthenticated, logout } = useDeliveryAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
+  const [orderCount, setOrderCount] = useState<number>(0);
+  const [activeDeliveries, setActiveDeliveries] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState<any>(null);
   const [action, setAction] = useState(0);
@@ -50,14 +45,22 @@ export default function DeliveryAccountPage() {
 
     try {
       setLoading(true);
+      
+      // Fetch user info and completed orders count
       const response = await servexDeliveryApi.userInfo(userId);
 
       if (response.data) {
         setUserData(response.data);
       }
 
-      if (response.order) {
-        setOrderStats(response.order);
+      if (response.order !== undefined) {
+        setOrderCount(Number(response.order) || 0);
+      }
+
+      // Fetch active deliveries (status 3 = accepted/in progress)
+      const activeResponse = await servexDeliveryApi.homepage(userId, 3);
+      if (activeResponse.data && Array.isArray(activeResponse.data)) {
+        setActiveDeliveries(activeResponse.data.length);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -172,23 +175,31 @@ export default function DeliveryAccountPage() {
             </div>
 
             {/* Order Statistics */}
-            {orderStats && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">
-                  {text.d_order_stats || 'Order Statistics'}
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-3xl font-bold text-blue-600">{orderStats.total || 0}</p>
-                    <p className="text-sm text-gray-600 mt-1">{text.d_total_orders || 'Total Orders'}</p>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-3xl font-bold text-green-600">{orderStats.delivered || 0}</p>
-                    <p className="text-sm text-gray-600 mt-1">{text.d_delivered || 'Delivered'}</p>
-                  </div>
-                </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">
+                {text.d_order_stats || 'Order Statistics'}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => router.push('/delivery/home')}
+                  className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:from-blue-100 hover:to-blue-200 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+                >
+                  <p className="text-4xl font-bold text-blue-600">{activeDeliveries}</p>
+                  <p className="text-sm text-gray-700 mt-2 font-medium">
+                    {text.d_active_deliveries || 'Active Deliveries'}
+                  </p>
+                </button>
+                <button
+                  onClick={() => router.push('/delivery/my')}
+                  className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:from-green-100 hover:to-green-200 transition-all duration-200 transform hover:scale-105 cursor-pointer"
+                >
+                  <p className="text-4xl font-bold text-green-600">{orderCount}</p>
+                  <p className="text-sm text-gray-700 mt-2 font-medium">
+                    {text.d_completed || 'Completed'}
+                  </p>
+                </button>
               </div>
-            )}
+            </div>
 
             {/* Change Password Section */}
             <div className="bg-white rounded-lg shadow-md p-6">
