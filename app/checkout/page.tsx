@@ -220,6 +220,21 @@ export default function CheckoutPage() {
         }
       }
 
+      // Extract store_id from checkout data
+      console.log('===== EXTRACTING STORE_ID =====');
+      console.log('checkoutData?.data?.[0]?.store_id:', checkoutData?.data?.[0]?.store_id);
+      console.log('checkoutData?.store?.id:', checkoutData?.store?.id);
+      console.log('checkoutData?.store_id:', checkoutData?.store_id);
+      console.log('localStorage store_id:', localStorage.getItem('store_id'));
+      
+      const storeId = checkoutData?.data?.[0]?.store_id || 
+                      checkoutData?.store?.id || 
+                      checkoutData?.store_id ||
+                      localStorage.getItem('store_id') || 
+                      '0';
+      
+      console.log('Final storeId:', storeId);
+
       const orderData: any = {
         payment: paymentMethod,
         cart_no: localStorage.getItem('cart_no'),
@@ -229,10 +244,18 @@ export default function CheckoutPage() {
         order_date: orderDate === '2' ? selectedDate : '',
         order_time: orderDate === '2' ? selectedTime : '',
         user_id: localStorage.getItem('user_id'),
+        store_id: storeId,
         address: selectedAddress,
         ecash: ecashAmount,
         comment: comment
       };
+
+      console.log('===== PLACING ORDER =====');
+      console.log('Order Data:', orderData);
+      console.log('Order Data store_id specifically:', orderData.store_id);
+      console.log('Current Lat:', localStorage.getItem('current_lat'));
+      console.log('Current Lng:', localStorage.getItem('current_lng'));
+      console.log('Checkout Data:', checkoutData);
 
       // Handle GCash payment proof upload
       if (paymentMethod === '5' && gcashProof) {
@@ -264,6 +287,9 @@ export default function CheckoutPage() {
       if (oldLng) localStorage.setItem('current_lng', oldLng);
     } catch (error: any) {
       console.error('Error placing order:', error);
+      console.error('Error response:', error.response);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error response status:', error.response?.status);
       
       // Restore location on error too
       const oldLat = localStorage.getItem('current_lat');
@@ -271,7 +297,8 @@ export default function CheckoutPage() {
       if (oldLat) localStorage.setItem('current_lat', oldLat);
       if (oldLng) localStorage.setItem('current_lng', oldLng);
       
-      toast.error(error.response?.data?.message || 'Failed to place order');
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to place order';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }

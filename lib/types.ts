@@ -93,6 +93,12 @@ export interface Order {
   o_type: number;
   items: any[];
   address: string;
+  dboy?: string;
+  dboy_phone?: string;
+  dboy_image?: string;
+  vehicle_type?: string;
+  vehicle_number?: string;
+  license_number?: string;
 }
 
 export interface Address {

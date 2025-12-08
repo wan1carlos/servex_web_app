@@ -25,6 +25,7 @@ export default function DeliveryHomePage() {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState<any>(null);
   const [localOnline, setLocalOnline] = useState(online);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -136,37 +137,37 @@ export default function DeliveryHomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
-                onClick={() => router.push('/')}
-                className="text-gray-600 hover:text-gray-900"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="text-gray-600 hover:text-gray-900 focus:outline-none"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <h1 className="text-xl font-bold text-gray-900">
-                {text.d_home_title || 'Delivery Dashboard'}
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
+                Servex
               </h1>
             </div>
 
             {/* Online/Offline Toggle */}
-            <div className="flex items-center gap-3 border border-gray-200 rounded-lg px-3 py-2">
-              <span className={`text-sm font-medium ${localOnline ? 'text-green-600' : 'text-gray-500'}`}>
+            <div className="flex items-center gap-2 sm:gap-3 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2">
+              <span className={`text-xs sm:text-sm font-medium ${localOnline ? 'text-green-600' : 'text-gray-500'}`}>
                 {localOnline ? text.d_active || 'Active' : text.d_offline || 'Offline'}
               </span>
               <button
                 onClick={handleStatusToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-5 w-9 sm:h-6 sm:w-11 items-center rounded-full transition-colors ${
                   localOnline ? 'bg-green-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    localOnline ? 'translate-x-6' : 'translate-x-1'
+                  className={`inline-block h-3.5 w-3.5 sm:h-4 sm:w-4 transform rounded-full bg-white transition-transform ${
+                    localOnline ? 'translate-x-5 sm:translate-x-6' : 'translate-x-0.5 sm:translate-x-1'
                   }`}
                 />
               </button>
@@ -175,127 +176,188 @@ export default function DeliveryHomePage() {
 
           {/* User Info */}
           {user && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-3 sm:mt-4">
               <div>
-                <p className="text-sm text-gray-600">Welcome back,</p>
-                <p className="font-semibold text-gray-900">{user.name}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => router.push('/delivery/my')}
-                  className="px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                >
-                  My Orders
-                </button>
-                <button
-                  onClick={() => router.push('/delivery/earn')}
-                  className="px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                >
-                  Earnings
-                </button>
-                <button
-                  onClick={() => router.push('/delivery/account')}
-                  className="px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                >
-                  Account
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  Logout
-                </button>
+                <p className="text-xs sm:text-sm text-gray-600">Welcome back,</p>
+                <p className="font-semibold text-sm sm:text-base text-gray-900">{user.name}</p>
               </div>
             </div>
           )}
         </div>
       </header>
 
+      {/* Slide-out Menu */}
+      {menuOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-transparent z-40"
+            onClick={() => setMenuOpen(false)}
+          />
+          
+          {/* Menu Panel */}
+          <div className="fixed top-0 left-0 h-full w-64 sm:w-80 bg-white shadow-xl z-50 transform transition-transform">
+            <div className="flex flex-col h-full">
+              {/* Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900">Menu</h2>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Menu Items */}
+              <nav className="flex-1 p-4 space-y-2">
+                <button
+                  onClick={() => {
+                    router.push('/delivery/my');
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <span className="font-medium">My Orders</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    router.push('/delivery/earn');
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-medium">Earnings</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    router.push('/delivery/account');
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-green-50 hover:text-green-600 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="font-medium">Account</span>
+                </button>
+              </nav>
+
+              {/* Logout Button */}
+              <div className="p-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span className="font-medium">Logout</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 max-w-7xl">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-green-600"></div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {orders.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-center py-8 sm:py-12">
+                <svg className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
-                <p className="text-gray-600 font-medium">{text.d_no_order || 'No orders available'}</p>
-                <p className="text-gray-500 text-sm mt-2">
+                <p className="text-sm sm:text-base text-gray-600 font-medium">{text.d_no_order || 'No orders available'}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-2 px-4">
                   {localOnline 
                     ? 'New orders will appear here when available' 
                     : 'Turn on active status to receive orders'}
                 </p>
               </div>
             ) : (
-              orders.map((order) => (
-                <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                  <div className="p-6 space-y-4">
-                    {/* Store Name */}
-                    <h3 className="text-xl font-bold text-gray-900">{order.store}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {orders.map((order) => (
+                  <div key={order.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="p-4 sm:p-5 lg:p-6 space-y-3 sm:space-y-4">
+                      {/* Store Name */}
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{order.store}</h3>
 
-                    {/* Order Details */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="font-semibold text-gray-700">{text.d_order_id || 'Order ID'}:</span>
-                      </div>
-                      <div className="text-gray-600">{order.id}</div>
+                      {/* Order Details */}
+                      <div className="space-y-2 text-xs sm:text-sm">
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-700">{text.d_order_id || 'Order ID'}:</span>
+                          <span className="text-gray-600">#{order.id}</span>
+                        </div>
 
-                      <div>
-                        <span className="font-semibold text-gray-700">{text.d_user || 'User'}:</span>
-                      </div>
-                      <div className="text-gray-600">{order.user.name}</div>
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-700">{text.d_user || 'User'}:</span>
+                          <span className="text-gray-600 truncate ml-2">{order.user.name}</span>
+                        </div>
 
-                      <div>
-                        <span className="font-semibold text-gray-700">{text.d_phone || 'Phone'}:</span>
-                      </div>
-                      <div>
-                        <a href={`tel:${order.user.phone}`} className="text-green-600 hover:underline">
-                          {order.user.phone}
-                        </a>
+                        <div className="flex justify-between">
+                          <span className="font-semibold text-gray-700">{text.d_phone || 'Phone'}:</span>
+                          <a href={`tel:${order.user.phone}`} className="text-green-600 hover:underline">
+                            {order.user.phone}
+                          </a>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100">
+                          <span className="font-semibold text-gray-700 block mb-1">{text.d_address || 'Address'}:</span>
+                          <p className="text-gray-600 text-xs sm:text-sm line-clamp-2">{order.user.address}</p>
+                        </div>
                       </div>
 
-                      <div>
-                        <span className="font-semibold text-gray-700">{text.d_address || 'Address'}:</span>
+                      {/* Actions */}
+                      <div className="pt-2">
+                        {order.st > 1 ? (
+                          <button
+                            onClick={() => handleViewDetail(order)}
+                            className="w-full bg-green-600 text-white py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-green-700 transition-colors"
+                          >
+                            {text.d_view_detail || 'View Detail'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAccept(order)}
+                            className="w-full bg-green-600 text-white py-2.5 sm:py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-green-700 transition-colors"
+                          >
+                            {text.d_accept || 'Accept Order'}
+                          </button>
+                        )}
                       </div>
-                      <div className="text-gray-600">{order.user.address}</div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="pt-4">
-                      {order.st > 1 ? (
-                        <button
-                          onClick={() => handleViewDetail(order)}
-                          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                        >
-                          {text.d_view_detail || 'View Detail'}
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleAccept(order)}
-                          className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
-                        >
-                          {text.d_accept || 'Accept Order'}
-                        </button>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         )}
 
         {/* Refresh Button */}
-        <div className="mt-8 text-center">
+        <div className="mt-6 sm:mt-8 text-center">
           <button
             onClick={loadData}
             disabled={loading}
-            className="px-6 py-3 bg-white text-green-600 border border-green-600 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
+            className="px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-white text-green-600 border border-green-600 rounded-lg font-medium hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Loading...' : 'Refresh Orders'}
           </button>

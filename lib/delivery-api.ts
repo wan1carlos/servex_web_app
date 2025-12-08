@@ -12,6 +12,15 @@ const deliveryApi = axios.create({
 deliveryApi.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Suppress 404 errors for the 'my' endpoint (it may not be available)
+    const isMyEndpoint = error.config?.url?.includes('my?');
+    const is404 = error.response?.status === 404;
+    
+    if (isMyEndpoint && is404) {
+      // Silently handle 404 for 'my' endpoint
+      return Promise.reject(error);
+    }
+    
     console.error('Delivery API Error:', error.message);
     
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
@@ -114,7 +123,8 @@ export const servexDeliveryApi = {
 
   // Earnings
   earn: async (id: string) => {
-    const response = await deliveryApi.get(`earn?id=${id}`);
+    const lid = getLocalStorage('lid', '1');
+    const response = await deliveryApi.get(`earn?id=${id}&lid=${lid}`);
     return response.data;
   },
 };
