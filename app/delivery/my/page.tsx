@@ -159,30 +159,6 @@ export default function DeliveryMyOrdersPage() {
                       {/* Expanded Details */}
                       {isExpanded && (
                         <div className="space-y-4 border-t border-gray-200 pt-4">
-                          {/* Rider Details */}
-                          {userData && (
-                            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-                              <h4 className="text-sm font-semibold text-green-800 mb-3 flex items-center gap-2">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                {text.d_delivery_rider || 'Delivery Rider'}
-                              </h4>
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-start">
-                                  <span className="text-sm text-gray-700 font-medium">{text.d_rider_name || 'Rider'}:</span>
-                                  <span className="text-sm font-bold text-green-900">{userData.name}</span>
-                                </div>
-                                {userData.phone && (
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-sm text-gray-700 font-medium">{text.d_phone || 'Phone'}:</span>
-                                    <span className="text-sm font-semibold text-green-900">{userData.phone}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
                           {/* Customer Info */}
                           {order.user && (
                             <div className="bg-gray-50 rounded-lg p-4">
