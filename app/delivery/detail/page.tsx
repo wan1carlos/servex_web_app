@@ -65,7 +65,79 @@ function DeliveryDetailContent() {
       setOrderData(order);
       setStatus(order.st);
     }
-  }, [isAuthenticated, router]);
+
+    // Start location tracking for active delivery
+    let locationInterval: NodeJS.Timeout | null = null;
+    let watchId: number | null = null;
+
+    const startLocationTracking = () => {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser.');
+        return;
+      }
+
+      // Get initial location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          localStorage.setItem('current_lat', latitude.toString());
+          localStorage.setItem('current_lng', longitude.toString());
+          console.log('Delivery location set:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      // Watch position for continuous updates
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          localStorage.setItem('current_lat', latitude.toString());
+          localStorage.setItem('current_lng', longitude.toString());
+          console.log('Delivery location updated:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Error watching location:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      // Send location updates to server every 10 seconds during active delivery
+      locationInterval = setInterval(async () => {
+        if (userId && (status === 3 || status === 4)) {
+          try {
+            await servexDeliveryApi.setStatus(userId, 1);
+            console.log('Delivery location sent to server');
+          } catch (error) {
+            console.error('Error sending location to server:', error);
+          }
+        }
+      }, 10000);
+    };
+
+    const stopLocationTracking = () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      if (locationInterval) {
+        clearInterval(locationInterval);
+        locationInterval = null;
+      }
+    };
+
+    // Start tracking if order is active (status 3 or 4)
+    if (status === 3 || status === 4) {
+      startLocationTracking();
+    }
+
+    // Cleanup function
+    return () => {
+      stopLocationTracking();
+    };
+  }, [isAuthenticated, router, userId, status]);
 
   const handleStartRide = async (orderId: string, statusType: number) => {
     try {

@@ -27,25 +27,6 @@ export default function DeliveryHomePage() {
   const [localOnline, setLocalOnline] = useState(online);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/delivery/login');
-      return;
-    }
-
-    // Load language text
-    const appText = localStorage.getItem('app_text');
-    if (appText) {
-      setText(JSON.parse(appText));
-    }
-
-    loadData();
-  }, [isAuthenticated, router]);
-
-  useEffect(() => {
-    setLocalOnline(online);
-  }, [online]);
-
   const loadData = async () => {
     if (!userId) return;
 
@@ -73,6 +54,96 @@ export default function DeliveryHomePage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/delivery/login');
+      return;
+    }
+
+    // Load language text
+    const appText = localStorage.getItem('app_text');
+    if (appText) {
+      setText(JSON.parse(appText));
+    }
+
+    loadData();
+
+    // Start location tracking when rider is online
+    let locationInterval: NodeJS.Timeout | null = null;
+    let watchId: number | null = null;
+
+    const startLocationTracking = () => {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser.');
+        return;
+      }
+
+      // Get initial location
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          localStorage.setItem('current_lat', latitude.toString());
+          localStorage.setItem('current_lng', longitude.toString());
+          console.log('Initial location set:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Error getting initial location:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      // Watch position for continuous updates
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          localStorage.setItem('current_lat', latitude.toString());
+          localStorage.setItem('current_lng', longitude.toString());
+          console.log('Location updated:', latitude, longitude);
+        },
+        (error) => {
+          console.error('Error watching location:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      // Send location updates to server every 10 seconds
+      locationInterval = setInterval(async () => {
+        if (userId && online) {
+          try {
+            await servexDeliveryApi.setStatus(userId, 1);
+            console.log('Location sent to server');
+          } catch (error) {
+            console.error('Error sending location to server:', error);
+          }
+        }
+      }, 10000);
+    };
+
+    const stopLocationTracking = () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      if (locationInterval) {
+        clearInterval(locationInterval);
+        locationInterval = null;
+      }
+    };
+
+    // Start tracking if online
+    if (online) {
+      startLocationTracking();
+    }
+
+    return () => {
+      stopLocationTracking();
+    };
+  }, [isAuthenticated, router, online, userId]);
+
+  useEffect(() => {
+    setLocalOnline(online);
+  }, [online]);
 
   const handleStatusToggle = async () => {
     if (!userId) return;
