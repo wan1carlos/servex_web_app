@@ -72,7 +72,10 @@ export default function OrderMap({
       });
 
       // Add store marker (blue)
-      if (storeLat && storeLng) {
+      if (
+        typeof storeLat === 'number' && !isNaN(storeLat) &&
+        typeof storeLng === 'number' && !isNaN(storeLng)
+      ) {
         const storeIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -88,7 +91,10 @@ export default function OrderMap({
       }
 
       // Add delivery marker (red)
-      if (deliveryLat && deliveryLng) {
+      if (
+        typeof deliveryLat === 'number' && !isNaN(deliveryLat) &&
+        typeof deliveryLng === 'number' && !isNaN(deliveryLng)
+      ) {
         const deliveryIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -103,8 +109,12 @@ export default function OrderMap({
           .bindPopup('Delivery Location');
       }
 
-      // Add rider marker (green)
-      if (riderLat && riderLng && (orderStatus === 3 || orderStatus === 4)) {
+      // Add rider marker (green) - Enhanced with status info
+      if (
+        typeof riderLat === 'number' && !isNaN(riderLat) &&
+        typeof riderLng === 'number' && !isNaN(riderLng) &&
+        (orderStatus === 3 || orderStatus === 4)
+      ) {
         const riderIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -114,9 +124,14 @@ export default function OrderMap({
           shadowSize: [41, 41]
         });
         
+        // Determine rider status message
+        const riderStatusMessage = orderStatus === 3 
+          ? '🛵 Rider - Going to Store for Pickup' 
+          : '🛵 Rider - Delivering to You';
+        
         L.marker([riderLat, riderLng], { icon: riderIcon })
           .addTo(map)
-          .bindPopup('Rider Location');
+          .bindPopup(riderStatusMessage);
       }
 
       // Add routing
@@ -136,18 +151,14 @@ export default function OrderMap({
 
       if (canCreateRoute) {
         let startLat, startLng;
-        
         // Determine start point based on what's available
         if ((orderStatus === 3 || orderStatus === 4) && riderLat && riderLng) {
-          // Rider is on the way - route from rider to delivery
           startLat = parseFloat(riderLat as any);
           startLng = parseFloat(riderLng as any);
         } else if (storeLat && storeLng) {
-          // Route from store to delivery
           startLat = parseFloat(storeLat as any);
           startLng = parseFloat(storeLng as any);
         } else if (riderLat && riderLng) {
-          // Fallback - route from rider to delivery
           startLat = parseFloat(riderLat as any);
           startLng = parseFloat(riderLng as any);
         } else {
@@ -162,47 +173,60 @@ export default function OrderMap({
         const endLat = parseFloat(deliveryLat as any);
         const endLng = parseFloat(deliveryLng as any);
 
-        console.log('Attempting to create route from', [startLat, startLng], 'to', [endLat, endLng]);
-        console.log('L.Routing available:', !!(L as any).Routing);
-        console.log('L.Routing.control available:', !!(L as any).Routing?.control);
+        // Check for valid coordinates before creating route
+        if (
+          typeof startLat === 'number' && !isNaN(startLat) &&
+          typeof startLng === 'number' && !isNaN(startLng) &&
+          typeof endLat === 'number' && !isNaN(endLat) &&
+          typeof endLng === 'number' && !isNaN(endLng)
+        ) {
+          console.log('Attempting to create route from', [startLat, startLng], 'to', [endLat, endLng]);
+          console.log('L.Routing available:', !!(L as any).Routing);
+          console.log('L.Routing.control available:', !!(L as any).Routing?.control);
 
-        if ((L as any).Routing && (L as any).Routing.control) {
-          try {
-            console.log('Creating routing control...');
-            
-            const routingControl = (L as any).Routing.control({
-              waypoints: [
-                L.latLng(startLat, startLng),
-                L.latLng(endLat, endLng)
-              ],
-              routeWhileDragging: false,
-              showAlternatives: false,
-              fitSelectedRoutes: true,
-              addWaypoints: false,
-              draggableWaypoints: false,
-              lineOptions: {
-                styles: [{ color: '#6FA1EC', weight: 4 }]
-              },
-              createMarker: function() { return null; } // Don't create default markers
-            });
-
-            console.log('Adding routing control to map...');
-            routingControl.addTo(map);
-            routingControlRef.current = routingControl;
-            console.log('Routing control added successfully');
-            
-            routingControl.on('routesfound', (e: any) => {
-              console.log('✓ Route found successfully!', e.routes);
-            });
-            
-            routingControl.on('routingerror', (e: any) => {
-              console.error('✗ Routing error:', e);
-            });
-          } catch (error) {
-            console.error('✗ Error creating routing:', error);
+          if ((L as any).Routing && (L as any).Routing.control) {
+            try {
+              console.log('Creating routing control...');
+              // Always use green route when rider is active (status 3 or 4)
+              // Status 3: Rider going to store (green route from rider to store)
+              // Status 4: Rider going to customer (green route from rider to customer)
+              const routeColor = (orderStatus === 3 || orderStatus === 4) && riderLat && riderLng 
+                ? '#10B981' // Green for active rider route (Tailwind green-500)
+                : '#6FA1EC'; // Blue for store route (when no rider assigned yet)
+              
+              const routingControl = (L as any).Routing.control({
+                waypoints: [
+                  L.latLng(startLat, startLng),
+                  L.latLng(endLat, endLng)
+                ],
+                routeWhileDragging: false,
+                showAlternatives: false,
+                fitSelectedRoutes: true,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                lineOptions: {
+                  styles: [{ color: routeColor, weight: 5, opacity: 0.8 }]
+                },
+                createMarker: function() { return null; }
+              });
+              console.log('Adding routing control to map...');
+              routingControl.addTo(map);
+              routingControlRef.current = routingControl;
+              console.log('Routing control added successfully');
+              routingControl.on('routesfound', (e: any) => {
+                console.log('✓ Route found successfully!', e.routes);
+              });
+              routingControl.on('routingerror', (e: any) => {
+                console.warn('Routing error:', e);
+              });
+            } catch (error) {
+              console.warn('Error creating routing:', error);
+            }
+          } else {
+            console.warn('L.Routing.control not available - routing disabled');
           }
         } else {
-          console.error('✗ L.Routing.control not available!');
+          console.warn('Invalid or missing route coordinates - routing disabled', { startLat, startLng, endLat, endLng });
         }
       } else {
         console.log('Cannot create route - missing required coordinates');

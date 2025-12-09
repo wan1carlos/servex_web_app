@@ -16,6 +16,15 @@ const MapComponent = dynamic(() => import('@/components/OrderMap'), {
   ),
 });
 
+// Helper function to safely parse coordinates
+const parseCoordinate = (value: any): number | undefined => {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
+  return !isNaN(parsed) && isFinite(parsed) ? parsed : undefined;
+};
+
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -29,10 +38,10 @@ export default function OrderDetailPage() {
     
     loadOrderData();
     
-    // Refresh order data every 15 seconds
-    const interval = setInterval(() => {
-      loadOrderData();
-    }, 15000);
+      // Refresh order data every 2 seconds for more accurate tracking
+      const interval = setInterval(() => {
+        loadOrderData();
+      }, 2000);
 
     return () => clearInterval(interval);
   }, [params.id]);
@@ -309,13 +318,26 @@ export default function OrderDetailPage() {
               </div>
             </div>
             
+            {/* Debug: Log coordinates */}
+            {console.log('Map Props Debug:', {
+              storeLat: parseCoordinate(orderData.order.slat),
+              storeLng: parseCoordinate(orderData.order.slng),
+              deliveryLat: parseCoordinate(orderData.order.lat),
+              deliveryLng: parseCoordinate(orderData.order.lng),
+              riderLat: parseCoordinate(orderData.lat),
+              riderLng: parseCoordinate(orderData.lng),
+              orderStatus: orderData.st,
+              rawRiderLat: orderData.lat,
+              rawRiderLng: orderData.lng
+            })}
+            
             <MapComponent
-              storeLat={orderData.order.slat}
-              storeLng={orderData.order.slng}
-              deliveryLat={orderData.order.lat}
-              deliveryLng={orderData.order.lng}
-              riderLat={orderData.lat}
-              riderLng={orderData.lng}
+              storeLat={parseCoordinate(orderData.order.slat)}
+              storeLng={parseCoordinate(orderData.order.slng)}
+              deliveryLat={parseCoordinate(orderData.order.lat)}
+              deliveryLng={parseCoordinate(orderData.order.lng)}
+              riderLat={parseCoordinate(orderData.lat)}
+              riderLng={parseCoordinate(orderData.lng)}
               orderStatus={orderData.st}
             />
             {orderData.tm && orderData.st == 4 && (
