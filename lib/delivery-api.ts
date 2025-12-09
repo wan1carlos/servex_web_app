@@ -83,7 +83,14 @@ export const servexDeliveryApi = {
   },
 
   updateInfo: async (data: any) => {
-    const response = await deliveryApi.post('updateInfo', data);
+    // Check if data is FormData (for image upload)
+    const config = data instanceof FormData ? {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    } : {};
+    
+    const response = await deliveryApi.post('updateInfo', data, config);
     return response.data;
   },
 
