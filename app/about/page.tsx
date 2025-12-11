@@ -71,6 +71,18 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* App Information */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold mb-6">App Information</h2>
+          <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6">
+            <h3 className="text-xl font-semibold text-yellow-900 mb-2">Delivery Riders: Location Required</h3>
+            <p className="text-yellow-900/90">
+              To receive and complete delivery tasks and earn, your device location must be turned ON and working properly. 
+              Please enable GPS and allow location permissions for your browser. Accurate, active location is required while delivering.
+            </p>
+          </div>
+        </section>
+
         {/* Team */}
         <section>
           <h2 className="text-3xl font-bold mb-6">Join Our Team</h2>

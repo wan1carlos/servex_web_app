@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Settings, ShoppingBag, MapPin, Home, LogOut } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, MapPin, Home, LogOut, Save, User as UserIcon, Phone, Mail, MessageSquare } from 'lucide-react';
 import servexApi from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -11,6 +11,13 @@ export default function AccountPage() {
   const [userData, setUserData] = useState<any>(null);
   const [appText, setAppText] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'overview' | 'edit'>('overview');
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    whatsapp_no: ''
+  });
 
   useEffect(() => {
     checkAuth();
@@ -37,6 +44,10 @@ export default function AccountPage() {
       if (response.data) {
         setUserData(response.data);
         localStorage.setItem('user_data', JSON.stringify(response.data));
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">{appText.account_title || 'My Account'}</h3>
+          email: response.data.email || '',
+          whatsapp_no: response.data.whatsapp_no || ''
+        });
         
         // Load app text
         const text = localStorage.getItem('app_text');
@@ -47,12 +58,7 @@ export default function AccountPage() {
     } catch (error) {
       console.error('Error loading user data:', error);
       toast.error('Failed to load account data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
+                    {/* Edit button removed; tabs below handle navigation */}
     if (confirm('Are you sure you want to logout?')) {
       localStorage.clear();
       toast.success('Logged out successfully');
@@ -61,9 +67,47 @@ export default function AccountPage() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.name || !formData.phone || !formData.email) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const userId = localStorage.getItem('user_id');
+
+      const formDataObj = new FormData();
+      formDataObj.append('name', formData.name);
+      formDataObj.append('phone', formData.phone);
+      formDataObj.append('email', formData.email);
+      formDataObj.append('whatsapp_no', formData.whatsapp_no);
+
+      const response = await servexApi.updateInfo(userId as string, formDataObj);
+
+      if (response.msg === 'done') {
+        toast.success('Profile updated successfully!');
+        const existing = JSON.parse(localStorage.getItem('user_data') || '{}');
+        const updated = { ...existing, ...formData };
+        localStorage.setItem('user_data', JSON.stringify(updated));
+        setUserData(updated);
+        setView('overview');
+      } else {
+        toast.error(response.error || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error?.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Settings</h3>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
       </div>
     );
@@ -97,8 +141,8 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-white/60 text-xs">Email</p>
-                  <p className="text-white font-medium">{userData?.email || 'Not provided'}</p>
+                  {/* Account Header */}
+                  <div className="px-4 pb-8 text-white">
                 </div>
               </div>
               
@@ -130,74 +174,172 @@ export default function AccountPage() {
             <button
               onClick={() => router.push('/settings')}
               className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
+                          <div className="pt-2">
+                            <button
+                              onClick={() => setView('edit')}
+                              className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium"
+                            >
+                              Edit Profile
+                            </button>
+                          </div>
             >
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <Settings className="w-5 h-5 text-pink-600" />
               </div>
               <span className="flex-1 text-left font-medium">
-                {appText.account_title || 'Account Settings'}
-              </span>
+                  {/* Content Section */}
+                  <div className="bg-white rounded-t-[2rem] px-4 pt-6 pb-20 min-h-[60vh]">
               <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
-            </button>
+                      {view === 'overview' ? (
+                        <>
+                          <h3 className="text-lg font-semibold text-gray-600 mb-4">
+                            {appText.account_title || 'My Account'}
+                          </h3>
+                          <div className="space-y-2">
+                            {/* My Orders */}
+                            <button
+                              onClick={() => router.push('/orders')}
+                              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
+                            >
+                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <ShoppingBag className="w-5 h-5 text-green-600" />
+                              </div>
+                              <span className="flex-1 text-left font-medium">
+                                {appText.my || 'My Orders'}
+                              </span>
+                              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
+                            </button>
 
-            {/* My Orders */}
-            <button
-              onClick={() => router.push('/orders')}
-              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
-            >
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-green-600" />
-              </div>
-              <span className="flex-1 text-left font-medium">
-                {appText.my || 'My Orders'}
-              </span>
-              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
-            </button>
+                            {/* Change Location */}
+                            <button
+                              onClick={() => router.push('/location')}
+                              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
+                            >
+                              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <MapPin className="w-5 h-5 text-orange-600" />
+                              </div>
+                              <span className="flex-1 text-left font-medium">
+                                {appText.change_location || 'Change Location'}
+                              </span>
+                              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
+                            </button>
 
-            {/* Change Location */}
-            <button
-              onClick={() => router.push('/location')}
-              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
-            >
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-orange-600" />
-              </div>
-              <span className="flex-1 text-left font-medium">
-                {appText.change_location || 'Change Location'}
-              </span>
-              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
-            </button>
+                            {/* Back to Home */}
+                            <button
+                              onClick={() => router.push('/home')}
+                              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
+                            >
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Home className="w-5 h-5 text-pink-600" />
+                              </div>
+                              <span className="flex-1 text-left font-medium">
+                                {appText.back_home || 'Back to Home'}
+                              </span>
+                              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
+                            </button>
 
-            {/* Back to Home */}
-            <button
-              onClick={() => router.push('/home')}
-              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
-            >
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Home className="w-5 h-5 text-pink-600" />
-              </div>
-              <span className="flex-1 text-left font-medium">
-                {appText.back_home || 'Back to Home'}
-              </span>
-              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
-            </button>
+                            {/* Logout */}
+                            <button
+                              onClick={handleLogout}
+                              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-red-50 rounded-xl shadow-sm transition"
+                            >
+                              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <LogOut className="w-5 h-5 text-red-600" />
+                              </div>
+                              <span className="flex-1 text-left font-medium text-red-600">
+                                {appText.logout || 'Logout'}
+                              </span>
+                              <ArrowLeft className="w-5 h-5 text-red-400 rotate-180" />
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-600">Edit Profile</h3>
+                            <button onClick={() => setView('overview')} className="text-sm text-pink-600 font-medium">Back</button>
+                          </div>
+                          <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+                            {/* Name */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <UserIcon className="w-4 h-4" />
+                                  Name <span className="text-red-500">*</span>
+                                </div>
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                placeholder="Enter your name"
+                                required
+                              />
+                            </div>
 
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-red-50 rounded-xl shadow-sm transition"
-            >
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <LogOut className="w-5 h-5 text-red-600" />
-              </div>
-              <span className="flex-1 text-left font-medium text-red-600">
-                {appText.logout || 'Logout'}
-              </span>
-              <ArrowLeft className="w-5 h-5 text-red-400 rotate-180" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                            {/* Phone */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-4 h-4" />
+                                  Phone <span className="text-red-500">*</span>
+                                </div>
+                              </label>
+                              <input
+                                type="tel"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                placeholder="Enter your phone number"
+                                required
+                              />
+                            </div>
+
+                            {/* Email */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4" />
+                                  Email <span className="text-red-500">*</span>
+                                </div>
+                              </label>
+                              <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                placeholder="Enter your email"
+                                required
+                              />
+                            </div>
+
+                            {/* WhatsApp */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="w-4 h-4" />
+                                  WhatsApp Number (Optional)
+                                </div>
+                              </label>
+                              <input
+                                type="tel"
+                                value={formData.whatsapp_no}
+                                onChange={(e) => setFormData({ ...formData, whatsapp_no: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                placeholder="Enter your WhatsApp number"
+                              />
+                            </div>
+
+                            {/* Submit Button */}
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              className="w-full bg-pink-600 text-white py-3 rounded-lg hover:bg-pink-700 font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              <Save className="w-5 h-5" />
+                              {loading ? 'Saving...' : 'Save Changes'}
+                            </button>
+                          </form>
+                        </>
+                      )}

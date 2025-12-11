@@ -20,20 +20,61 @@ interface EarningData {
   currency: string;
 }
 
-interface DebugInfo {
-  apiResponseCount: number;
-  ordersFound: number;
-  rawResponses: any[];
-}
-
 export default function DeliveryEarnPage() {
   const router = useRouter();
   const { userId, isAuthenticated } = useDeliveryAuth();
   const [data, setData] = useState<EarningData | null>(null);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState<any>(null);
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<'unknown' | 'granted' | 'prompt' | 'denied' | 'unsupported'>('unknown');
+  const [locationWorking, setLocationWorking] = useState<boolean | null>(null);
+
+  // Check geolocation permission and basic functionality
+  useEffect(() => {
+    const checkLocation = async () => {
+      if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+        setLocationStatus('unsupported');
+        setLocationWorking(false);
+        return;
+      }
+
+      // Check permission state if Permissions API is available
+      try {
+        const perms: any = (navigator as any).permissions;
+        if (perms && perms.query) {
+          const result = await perms.query({ name: 'geolocation' as PermissionName });
+          if (result && result.state) {
+            if (result.state === 'granted' || result.state === 'denied' || result.state === 'prompt') {
+              setLocationStatus(result.state as 'granted' | 'prompt' | 'denied');
+            }
+            // Update status on changes
+            if (result.onchange === null) {
+              result.onchange = () => {
+                const state = (result as any).state;
+                if (state) setLocationStatus(state as any);
+              };
+            }
+          }
+        }
+      } catch {
+        // Ignore permission API errors
+      }
+
+      // Attempt to get current position to verify it's working
+      try {
+        navigator.geolocation.getCurrentPosition(
+          () => setLocationWorking(true),
+          () => setLocationWorking(false),
+          { enableHighAccuracy: true, timeout: 7000, maximumAge: 10000 }
+        );
+      } catch {
+        setLocationWorking(false);
+      }
+    };
+
+    checkLocation();
+  }, []);
+  
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -54,10 +95,7 @@ export default function DeliveryEarnPage() {
     if (!userId) return;
 
     try {
-      console.log('===== FETCHING ALL DELIVERED ORDERS =====');
-      
       let allOrders: any[] = [];
-      const rawResponses: any[] = [];
       
       // Declare earnData outside the try block so it's accessible later
       let earnData: any = {};
@@ -66,20 +104,16 @@ export default function DeliveryEarnPage() {
       try {
         // Try earn endpoint first - this has the aggregate totals
         const earnResponse = await servexDeliveryApi.earn(userId);
-        console.log('Earn Response:', JSON.stringify(earnResponse, null, 2));
-        rawResponses.push({ source: 'earn', data: earnResponse });
         
         // Store the earn response for later use
         earnData = earnResponse.data || {};
       } catch (error: any) {
-        console.warn('Earn endpoint error:', error.message);
+        // ignore
       }
       
       // Try to fetch ALL completed/delivered orders from homepage with status 5 (completed)
       try {
         const completedResponse = await servexDeliveryApi.homepage(userId, 5);
-        console.log('Completed Orders (Status 5) Response:', JSON.stringify(completedResponse, null, 2));
-        rawResponses.push({ source: 'homepage-status-5', data: completedResponse });
         
         if (completedResponse.data) {
           let completedOrders: any[] = [];
@@ -112,12 +146,6 @@ export default function DeliveryEarnPage() {
                           order.rider_fee ||
                           '0';
             
-            console.log(`Mapping Order ${order.id}:`, {
-              delivery_charge: dcharge,
-              from_user_object: order.user?.d_charges,
-              raw_order: order
-            });
-            
             return {
               id: order.id,
               date: order.order_date || order.created_at || order.delivery_date || order.date,
@@ -136,14 +164,11 @@ export default function DeliveryEarnPage() {
           });
         }
       } catch (error: any) {
-        console.warn('Homepage status 5 endpoint error:', error.message);
+        // ignore
       }
       // Try to fetch from my endpoint (completed deliveries)
       try {
         const myResponse = await servexDeliveryApi.my(userId);
-        console.log('My Orders Response:', JSON.stringify(myResponse, null, 2));
-        rawResponses.push({ source: 'my', data: myResponse });
-        console.log('My Orders Response:', JSON.stringify(myResponse, null, 2));
         
         if (myResponse.data && Array.isArray(myResponse.data)) {
           const myOrders = myResponse.data.map((order: any) => {
@@ -164,12 +189,6 @@ export default function DeliveryEarnPage() {
                           order.rider_fee ||
                           '0';
             
-            console.log(`My Orders - Order ${order.id}:`, {
-              delivery_charge: dcharge,
-              from_user_object: order.user?.d_charges,
-              raw_order: order
-            });
-            
             return {
               id: order.id,
               date: order.order_date || order.created_at || order.delivery_date || order.date,
@@ -188,12 +207,8 @@ export default function DeliveryEarnPage() {
           });
         }
       } catch (myError: any) {
-        console.warn('My orders endpoint error:', myError.message);
+        // ignore
       }
-      
-      console.log('===== ALL ORDERS COLLECTED =====');
-      console.log('Total Orders Found:', allOrders.length);
-      console.log('Raw Orders Data:', JSON.stringify(allOrders, null, 2));
       
       // Filter out invalid orders
       // Remove Order #3 with incorrect ₱265800 charge and any unrealistic delivery charges
@@ -202,52 +217,32 @@ export default function DeliveryEarnPage() {
         
         // Remove Order #3 specifically
         if (order.id === '3') {
-          console.log(`❌ Filtered out Order #3 (incorrect delivery charge: ₱${deliveryCharge})`);
           return false;
         }
         
         // Filter out unrealistic delivery charges (> ₱5000)
         if (deliveryCharge > 5000) {
-          console.log(`❌ Filtered out Order #${order.id} (unrealistic delivery charge: ₱${deliveryCharge})`);
           return false;
         }
         
         return true;
       });
       
-      console.log('Orders after filtering:', allOrders.length);
-      
-      // If no orders found, log all raw responses for debugging
-      if (allOrders.length === 0) {
-        console.error('⚠️ NO ORDERS FOUND! Check the API responses above to see what data is being returned.');
-      }
-      
       // Calculate ALL earnings from actual delivery charges in orders
       const now = new Date();
       const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
       const currentMonth = now.getMonth(); // 0-11
       const currentYear = now.getFullYear();
-      
-      console.log(`Current Date: ${today}`);
-      console.log(`Current Month: ${currentMonth + 1}/${currentYear}`);
-      
+
       // Calculate earnings from actual delivery charges
       let totalEarnings = 0;
       let monthEarnings = 0;
       let todayEarnings = 0;
-      
-      console.log('===== CALCULATING EARNINGS FROM DELIVERY CHARGES =====');
-      
+
       // Calculate from individual orders
       allOrders.forEach((order: any) => {
         const deliveryCharge = parseFloat(order.amount || '0');
-        
-        console.log(`Order ${order.id}:`, {
-          deliveryCharge,
-          date: order.date,
-          rawOrder: order
-        });
-        
+
         // Add to total earnings
         totalEarnings += deliveryCharge;
         
@@ -260,11 +255,8 @@ export default function DeliveryEarnPage() {
             year: 'numeric' 
           }).replace(/ /g, '-'); // Format as "09-Dec-2025"
           
-          console.log(`Comparing dates - Order: ${orderDateStr}, Today: ${todayFormatted}`);
-          
           if (orderDateStr === todayFormatted) {
             todayEarnings += deliveryCharge;
-            console.log(`✓ Added to today's earnings: ${deliveryCharge}`);
           }
           
           // Check if order is from this month
@@ -285,11 +277,10 @@ export default function DeliveryEarnPage() {
               
               if (orderMonth === currentMonth && orderYear === currentYear) {
                 monthEarnings += deliveryCharge;
-                console.log(`✓ Added to this month's earnings: ${deliveryCharge}`);
               }
             }
           } catch (dateError) {
-            console.warn(`Could not parse date for order ${order.id}:`, orderDateStr);
+            // ignore date parse issues
           }
         }
       });
@@ -308,29 +299,12 @@ export default function DeliveryEarnPage() {
         orders: sortedOrders,
         currency: '₱',
       };
-      
-      console.log('===== FINAL EARNINGS SUMMARY =====');
-      console.log('Total Orders Processed:', earningsData.orders.length);
-      console.log('💰 Total Earnings: ₱' + totalEarnings.toFixed(2));
-      console.log('📅 Today Earnings: ₱' + todayEarnings.toFixed(2));
-      console.log('📊 Month Earnings: ₱' + monthEarnings.toFixed(2));
-      console.log('=====================================');
-      
+
       setData(earningsData);
-      setDebugInfo({
-        apiResponseCount: rawResponses.length,
-        ordersFound: allOrders.length,
-        rawResponses: rawResponses
-      });
-      
       if (allOrders.length === 0) {
-        toast.error('No delivered orders found. Click "Show Debug Info" button to see API responses.');
-        console.error('❌ No orders were returned from any API endpoint. Check your delivery boy ID and order status.');
-      } else {
-        console.log(`✅ Successfully loaded ${allOrders.length} orders`);
+        toast.error('No delivered orders found.');
       }
     } catch (error) {
-      console.error('Error loading earnings:', error);
       toast.error('Failed to load earnings');
     } finally {
       setLoading(false);
@@ -368,6 +342,26 @@ export default function DeliveryEarnPage() {
 
       {/* Content */}
       <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Location requirement note */}
+        <div
+          className={
+            (locationStatus !== 'granted' || locationWorking === false)
+              ? 'mb-6 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-900 p-4'
+              : 'mb-6 rounded-lg border border-green-200 bg-green-50 text-green-900 p-4'
+          }
+        >
+          <p className="text-sm font-medium">
+            Note: To earn, keep your device location ON and ensure it is working.
+          </p>
+          <p className="text-xs mt-1 opacity-90">
+            Turn on GPS and allow location permission in your browser. Accurate, active location is required while delivering.
+          </p>
+          <p className="text-xs mt-1 opacity-80">
+            Status: {locationStatus === 'unsupported' ? 'Location not supported' : locationStatus}
+            {locationWorking !== null && ` • Working: ${locationWorking ? 'Yes' : 'No'}`}
+          </p>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -459,36 +453,7 @@ export default function DeliveryEarnPage() {
               </div>
             )}
 
-            {/* Debug Info Panel */}
-            {debugInfo && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">Debug Information</h2>
-                  <button
-                    onClick={() => setShowDebug(!showDebug)}
-                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    {showDebug ? 'Hide Details' : 'Show Details'}
-                  </button>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  <p>API Response Count: <span className="font-semibold">{debugInfo.apiResponseCount}</span></p>
-                  <p>Orders Found: <span className="font-semibold">{debugInfo.ordersFound}</span></p>
-                </div>
-                
-                {showDebug && (
-                  <div className="mt-4">
-                    <div className="bg-gray-100 p-4 rounded overflow-auto max-h-96">
-                      <pre className="text-xs">{JSON.stringify(debugInfo.rawResponses, null, 2)}</pre>
-                    </div>
-                    <p className="text-xs text-gray-600 mt-2">
-                      💡 Tip: Check the console (F12) for detailed order field information
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Debug UI removed for production */}
 
             {/* Refresh Button */}
             <div className="text-center">
