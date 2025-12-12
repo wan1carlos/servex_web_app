@@ -22,6 +22,8 @@ export default function DeliverySettingPage() {
     vehicle_number: '',
     license_number: '',
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -73,6 +75,18 @@ export default function DeliverySettingPage() {
     });
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveDetails = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -80,22 +94,60 @@ export default function DeliverySettingPage() {
 
     try {
       setLoading(true);
-      const updateData = {
-        id: userId,
-        ...formData,
-      };
+      
+      // Try with regular JSON first (without image)
+      if (!selectedImage) {
+        const updateData = {
+          id: userId,
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          vehicle_type: formData.vehicle_type,
+          vehicle_number: formData.vehicle_number,
+          license_number: formData.license_number,
+        };
+        
+        console.log('Sending update data:', updateData);
+        const response = await servexDeliveryApi.updateInfo(updateData);
+        console.log('Update response:', response);
 
-      const response = await servexDeliveryApi.updateInfo(updateData);
+        if (response.data || response.ResponseCode === '200' || response.ResponseMsg === 'success') {
+          toast.success('Rider details updated successfully!');
+          setIsEditing(false);
+          await loadUserData();
+        } else {
+          toast.error(response.ResponseMsg || 'Failed to update rider details');
+        }
+      } else {
+        // Use FormData for image upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('id', userId);
+        formDataToSend.append('name', formData.name);
+        formDataToSend.append('phone', formData.phone);
+        formDataToSend.append('email', formData.email);
+        formDataToSend.append('vehicle_type', formData.vehicle_type);
+        formDataToSend.append('vehicle_number', formData.vehicle_number);
+        formDataToSend.append('license_number', formData.license_number);
+        formDataToSend.append('profile_image', selectedImage);
+        
+        console.log('Sending FormData with image');
+        const response = await servexDeliveryApi.updateInfo(formDataToSend);
+        console.log('Update response:', response);
 
-      if (response.data) {
-        setUserData(response.data);
-        setIsEditing(false);
-        toast.success('Rider details updated successfully!');
-        loadUserData();
+        if (response.data || response.ResponseCode === '200' || response.ResponseMsg === 'success') {
+          toast.success('Rider details updated successfully!');
+          setIsEditing(false);
+          setSelectedImage(null);
+          setImagePreview(null);
+          await loadUserData();
+        } else {
+          toast.error(response.ResponseMsg || 'Failed to update rider details');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating rider details:', error);
-      toast.error('Failed to update rider details');
+      console.error('Error response:', error.response?.data);
+      toast.error(error.response?.data?.ResponseMsg || 'Failed to update rider details');
     } finally {
       setLoading(false);
     }
@@ -112,6 +164,8 @@ export default function DeliverySettingPage() {
         license_number: userData.license_number || '',
       });
     }
+    setSelectedImage(null);
+    setImagePreview(null);
     setIsEditing(false);
   };
 
@@ -173,6 +227,42 @@ export default function DeliverySettingPage() {
 
             {isEditing ? (
               <form onSubmit={handleSaveDetails} className="space-y-4">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center gap-4 pb-4 border-b border-gray-200">
+                  <div className="relative">
+                    {imagePreview || userData?.image ? (
+                      <img
+                        src={imagePreview || `https://bsitport2026.com/servex/upload/dboy/${userData.image}`}
+                        alt="Profile"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-green-600"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center border-4 border-green-600">
+                        <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    )}
+                    <label
+                      htmlFor="image-upload"
+                      className="absolute bottom-0 right-0 bg-green-600 text-white p-2 rounded-full cursor-pointer hover:bg-green-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </label>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600">Click the camera icon to change profile picture</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Name */}
                   <div>
@@ -323,28 +413,6 @@ export default function DeliverySettingPage() {
             )}
           </div>
 
-          {/* Language Settings */}
-          <button
-            onClick={() => router.push('/delivery/lang')}
-            className="w-full bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-gray-900">{text.language || 'Language'}</h3>
-                  <p className="text-sm text-gray-600">{text.change_language || 'Change app language'}</p>
-                </div>
-              </div>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </button>
 
           {/* Account Settings */}
           <button

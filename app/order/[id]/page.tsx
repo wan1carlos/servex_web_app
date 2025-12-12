@@ -294,12 +294,14 @@ export default function OrderDetailPage() {
             
             {/* Map Legend */}
             <div className="mb-3 flex flex-wrap gap-3 text-sm">
-              {orderData.order.slat && orderData.order.slng && (
+              {/* Only show store marker before rider picks up from store (status < 4) */}
+              {orderData.order.slat && orderData.order.slng && (!orderData.st || orderData.st < 4) && (
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                   <span className="text-gray-600">Store</span>
                 </div>
               )}
+              {/* Show rider marker when order is accepted (status 3 or 4) */}
               {(orderData.st === 3 || orderData.st === 4) && orderData.lat && orderData.lng && (
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -313,7 +315,7 @@ export default function OrderDetailPage() {
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <div className="w-8 h-1 bg-blue-400"></div>
+                <div className={`w-8 h-1 ${(orderData.st === 3 || orderData.st === 4) ? 'bg-green-400' : 'bg-blue-400'}`}></div>
                 <span className="text-gray-600">Route</span>
               </div>
             </div>

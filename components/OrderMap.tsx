@@ -12,6 +12,12 @@ interface OrderMapProps {
   orderStatus?: number;
 }
 
+interface PathPoint {
+  lat: number;
+  lng: number;
+  timestamp: number;
+}
+
 export default function OrderMap({ 
   storeLat, 
   storeLng, 
@@ -24,6 +30,99 @@ export default function OrderMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const routingControlRef = useRef<any>(null);
+  const riderMarkerRef = useRef<any>(null);
+  const pathHistoryRef = useRef<PathPoint[]>([]);
+  const pathLayersRef = useRef<any[]>([]);
+  const leafletRef = useRef<any>(null);
+
+  // Effect to track rider position and create trail
+  useEffect(() => {
+    if (!mapRef.current || !leafletRef.current || !riderLat || !riderLng || (orderStatus !== 3 && orderStatus !== 4)) {
+      return;
+    }
+
+    const L = leafletRef.current;
+    const currentTime = Date.now();
+    
+    // Check if this is a new position (avoid duplicates)
+    const lastPoint = pathHistoryRef.current[pathHistoryRef.current.length - 1];
+    const isNewPosition = !lastPoint || 
+      Math.abs(lastPoint.lat - riderLat) > 0.0001 || 
+      Math.abs(lastPoint.lng - riderLng) > 0.0001;
+
+    if (isNewPosition) {
+      const newPoint: PathPoint = {
+        lat: riderLat,
+        lng: riderLng,
+        timestamp: currentTime
+      };
+
+      // Add new point to history
+      pathHistoryRef.current.push(newPoint);
+      console.log('Added new trail point:', newPoint);
+    }
+
+    // Remove points older than 10 seconds
+    const oldLength = pathHistoryRef.current.length;
+    pathHistoryRef.current = pathHistoryRef.current.filter(
+      point => currentTime - point.timestamp < 10000
+    );
+    if (oldLength !== pathHistoryRef.current.length) {
+      console.log(`Removed ${oldLength - pathHistoryRef.current.length} old trail points`);
+    }
+
+    // Clear old path layers safely
+    pathLayersRef.current.forEach(layer => {
+      try {
+        if (mapRef.current && layer) {
+          mapRef.current.removeLayer(layer);
+        }
+      } catch (e) {
+        // Ignore errors during cleanup
+      }
+    });
+    pathLayersRef.current = [];
+
+    // Draw trail with fading effect
+    if (pathHistoryRef.current.length > 1) {
+      for (let i = 0; i < pathHistoryRef.current.length - 1; i++) {
+        const point1 = pathHistoryRef.current[i];
+        const point2 = pathHistoryRef.current[i + 1];
+        
+        // Calculate opacity based on age (newer = more opaque)
+        const age = currentTime - point1.timestamp;
+        const opacity = Math.max(0.1, 1 - (age / 10000)); // Fade from 1 to 0.1 over 10 seconds
+        
+        try {
+          // Create polyline for this segment
+          const polyline = L.polyline(
+            [[point1.lat, point1.lng], [point2.lat, point2.lng]],
+            {
+              color: '#10B981', // Green color
+              weight: 4,
+              opacity: opacity,
+              smoothFactor: 1
+            }
+          ).addTo(mapRef.current);
+          
+          pathLayersRef.current.push(polyline);
+        } catch (e) {
+          console.error('Error drawing trail segment:', e);
+        }
+      }
+      console.log(`Drew ${pathLayersRef.current.length} trail segments`);
+    }
+
+    // Update rider marker position with smooth animation
+    if (riderMarkerRef.current) {
+      try {
+        riderMarkerRef.current.setLatLng([riderLat, riderLng]);
+      } catch (e) {
+        console.error('Error updating rider marker:', e);
+      }
+    }
+
+  }, [riderLat, riderLng, orderStatus]);
 
   useEffect(() => {
     let isMounted = true;
@@ -36,6 +135,7 @@ export default function OrderMap({
       // Dynamically import Leaflet
       const leafletModule = await import('leaflet');
       const L = leafletModule.default;
+      leafletRef.current = L;
       
       console.log('Leaflet loaded:', !!L);
 
@@ -71,10 +171,11 @@ export default function OrderMap({
         orderStatus
       });
 
-      // Add store marker (blue)
+      // Add store marker (blue) - Only show before rider picks up from store (status < 4)
       if (
         typeof storeLat === 'number' && !isNaN(storeLat) &&
-        typeof storeLng === 'number' && !isNaN(storeLng)
+        typeof storeLng === 'number' && !isNaN(storeLng) &&
+        (!orderStatus || orderStatus < 4)
       ) {
         const storeIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
@@ -109,7 +210,7 @@ export default function OrderMap({
           .bindPopup('Delivery Location');
       }
 
-      // Add rider marker (green) - Enhanced with status info
+      // Add rider marker (green) - Enhanced with status info and animation
       if (
         typeof riderLat === 'number' && !isNaN(riderLat) &&
         typeof riderLng === 'number' && !isNaN(riderLng) &&
@@ -129,9 +230,19 @@ export default function OrderMap({
           ? '🛵 Rider - Going to Store for Pickup' 
           : '🛵 Rider - Delivering to You';
         
-        L.marker([riderLat, riderLng], { icon: riderIcon })
+        const riderMarker = L.marker([riderLat, riderLng], { icon: riderIcon })
           .addTo(map)
           .bindPopup(riderStatusMessage);
+        
+        // Store marker reference for updates
+        riderMarkerRef.current = riderMarker;
+        
+        // Initialize path history with current position
+        pathHistoryRef.current = [{
+          lat: riderLat,
+          lng: riderLng,
+          timestamp: Date.now()
+        }];
       }
 
       // Add routing
@@ -165,7 +276,9 @@ export default function OrderMap({
           console.log('No valid start point for routing');
           mapRef.current = map;
           setTimeout(() => {
-            map.invalidateSize();
+            if (mapRef.current) {
+              map.invalidateSize();
+            }
           }, 100);
           return;
         }
@@ -205,7 +318,7 @@ export default function OrderMap({
                 addWaypoints: false,
                 draggableWaypoints: false,
                 lineOptions: {
-                  styles: [{ color: routeColor, weight: 5, opacity: 0.8 }]
+                  styles: [{ color: routeColor, weight: 5, opacity: 0.3 }]
                 },
                 createMarker: function() { return null; }
               });
@@ -213,9 +326,11 @@ export default function OrderMap({
               routingControl.addTo(map);
               routingControlRef.current = routingControl;
               console.log('Routing control added successfully');
+              
               routingControl.on('routesfound', (e: any) => {
                 console.log('✓ Route found successfully!', e.routes);
               });
+              
               routingControl.on('routingerror', (e: any) => {
                 console.warn('Routing error:', e);
               });
@@ -238,8 +353,15 @@ export default function OrderMap({
 
       mapRef.current = map;
 
+      // Safely invalidate size after a delay
       setTimeout(() => {
-        map.invalidateSize();
+        if (isMounted && mapRef.current) {
+          try {
+            mapRef.current.invalidateSize();
+          } catch (e) {
+            // Ignore
+          }
+        }
       }, 100);
     };
 
@@ -247,6 +369,33 @@ export default function OrderMap({
 
     return () => {
       isMounted = false;
+      
+      // Clean up path layers first
+      pathLayersRef.current.forEach(layer => {
+        try {
+          if (mapRef.current && layer && mapRef.current.hasLayer && mapRef.current.hasLayer(layer)) {
+            mapRef.current.removeLayer(layer);
+          }
+        } catch (e) {
+          // Ignore
+        }
+      });
+      pathLayersRef.current = [];
+      pathHistoryRef.current = [];
+      
+      // Clean up rider marker
+      if (riderMarkerRef.current && mapRef.current) {
+        try {
+          if (mapRef.current.hasLayer && mapRef.current.hasLayer(riderMarkerRef.current)) {
+            mapRef.current.removeLayer(riderMarkerRef.current);
+          }
+        } catch (e) {
+          // Ignore
+        }
+        riderMarkerRef.current = null;
+      }
+      
+      // Clean up routing control
       if (routingControlRef.current && mapRef.current) {
         try {
           mapRef.current.removeControl(routingControlRef.current);
@@ -255,10 +404,18 @@ export default function OrderMap({
         }
         routingControlRef.current = null;
       }
+      
+      // Finally remove the map
       if (mapRef.current) {
-        mapRef.current.remove();
+        try {
+          mapRef.current.remove();
+        } catch (e) {
+          // Ignore
+        }
         mapRef.current = null;
       }
+      
+      leafletRef.current = null;
     };
   }, [storeLat, storeLng, deliveryLat, deliveryLng, riderLat, riderLng, orderStatus]);
 

@@ -245,13 +245,47 @@ export default function DeliveryHomePage() {
             </div>
           </div>
 
-          {/* User Info */}
+          {/* User Info with Profile Picture */}
           {user && (
-            <div className="mt-3 sm:mt-4">
-              <div>
-                <p className="text-xs sm:text-sm text-gray-600">Welcome back,</p>
-                <p className="font-semibold text-sm sm:text-base text-gray-900">{user.name}</p>
+            <div className="mt-3 sm:mt-4 flex items-center gap-3">
+              {/* Profile Picture */}
+              <div className="flex-shrink-0">
+                {user.image ? (
+                  <img 
+                    src={`https://bsitport2026.com/servex/upload/dboy/${user.image}`}
+                    alt={user.name}
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-green-600"
+                  />
+                ) : (
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-green-100 rounded-full flex items-center justify-center border-2 border-green-600">
+                    <svg className="w-6 h-6 sm:w-7 sm:h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
               </div>
+              
+              {/* User Details */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-gray-600">Welcome back,</p>
+                <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">{user.name}</p>
+                {(user.vehicle_type || user.vehicle_number) && (
+                  <div className="flex items-center gap-2 mt-1">
+                    {user.vehicle_type && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        {user.vehicle_type}
+                      </span>
+                    )}
+                    {user.vehicle_number && (
+                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full font-mono">
+                        {user.vehicle_number}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Settings removed */}
             </div>
           )}
         </div>
@@ -284,6 +318,8 @@ export default function DeliveryHomePage() {
 
               {/* Menu Items */}
               <nav className="flex-1 p-4 space-y-2">
+                {/* Settings menu removed */}
+
                 <button
                   onClick={() => {
                     router.push('/delivery/my');

@@ -11,21 +11,46 @@ import toast from 'react-hot-toast';
 export default function CartPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { cartData, items, loadCart, updateCartItem, isLoading } = useCart();
+  const { cartData, items, loadCart, updateCartItem, isLoading, initializeCart } = useCart();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
-    // Redirect to login if not authenticated
-    if (!isAuthenticated) {
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const run = async () => {
+      // Ensure cart number exists before loading
+      initializeCart();
+
+      // If already authenticated in store, just load cart
+      if (useAuth.getState().isAuthenticated) {
+        await loadCart();
+        return;
+      }
+
+      // Guard against redirect before persisted auth rehydrates
+      const uid = localStorage.getItem('user_id');
+      if (uid) {
+        try {
+          await useAuth.getState().loadUser();
+          if (useAuth.getState().isAuthenticated) {
+            await loadCart();
+            return;
+          }
+        } catch {
+          // fall through to redirect
+        }
+      }
+
       toast.error('Please login to view your cart');
       router.push('/login');
-      return;
-    }
-    
-    loadCart();
-  }, [isAuthenticated, loadCart, router]);
+    };
+
+    run();
+  }, [mounted, initializeCart, loadCart, router]);
 
   const handleUpdateQuantity = async (cartId: string, type: number) => {
     await updateCartItem(cartId, type);
