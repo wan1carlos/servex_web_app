@@ -37,6 +37,11 @@ export default function RatePage() {
       return;
     }
 
+    if (!params || !params.id) {
+      toast.error('Invalid order');
+      return;
+    }
+
     try {
       setLoading(true);
       const userId = localStorage.getItem('user_id');

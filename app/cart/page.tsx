@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Minus, Plus, Trash2, Tag, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/lib/cart-store';
 import { useAuth } from '@/lib/auth-store';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 export default function CartPage() {
   const router = useRouter();

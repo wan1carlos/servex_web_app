@@ -53,6 +53,7 @@ export interface Addon {
 }
 
 export interface CartItem {
+  qtype: string;
   id: string;
   cart_no: string;
   item_id: string;
