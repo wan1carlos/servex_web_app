@@ -94,8 +94,17 @@ export default function CartPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="bg-white rounded-lg p-4 shadow-sm">
+            {(Array.isArray(items) ? items : [])
+              .filter((it) => it && typeof it === 'object')
+              .map((item, idx) => (
+              <div
+                key={
+                  item.id
+                    ? `${item.id}-${item.item_size_id ?? item.qtype ?? 'size'}-${item.qty ?? 1}`
+                    : `row-${idx}`
+                }
+                className="bg-white rounded-lg p-4 shadow-sm"
+              >
                 <div className="flex gap-4">
                   <img
                     src={item.img}
@@ -109,10 +118,10 @@ export default function CartPage() {
                       Price: {cartData.currency}{item.price} | Qty: {item.qty} {item.qtyName}
                     </p>
                     
-                    {item.addon && item.addon.length > 0 && (
+                    {Array.isArray(item.addon) && item.addon.length > 0 && (
                       <div className="text-sm text-gray-500 mb-2">
-                        {item.addon.map((addon, idx) => (
-                          <div key={idx}>
+                        {item.addon.map((addon, aIdx) => (
+                          <div key={`${item.id ?? idx}-addon-${aIdx}`}>
                             + {addon.name} - {cartData.currency}{addon.price}
                           </div>
                         ))}
