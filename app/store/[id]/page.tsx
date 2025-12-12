@@ -6,10 +6,10 @@ import { Star, Clock, MapPin, Search, Plus } from 'lucide-react';
 import servexApi from '@/lib/api';
 import { useCart } from '@/lib/cart-store';
 import { useAuth } from '@/lib/auth-store';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 
 export default function StorePage() {
-  const params = useParams();
+  const params = useParams() as { id?: string };
   const router = useRouter();
   const { addToCart } = useCart();
   const { userId } = useAuth();
@@ -19,15 +19,15 @@ export default function StorePage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    if (params.id) {
-      loadStore();
+    if (params?.id) {
+      loadStore(params.id);
     }
-  }, [params.id]);
+  }, [params?.id]);
 
-  const loadStore = async () => {
+  const loadStore = async (storeId: string) => {
     try {
       setLoading(true);
-      const response = await servexApi.item(params.id as string);
+      const response = await servexApi.item(storeId);
       setData(response.data);
     } catch (error) {
       console.error('Error loading store:', error);

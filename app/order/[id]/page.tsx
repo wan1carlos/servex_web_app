@@ -27,7 +27,7 @@ const parseCoordinate = (value: any): number | undefined => {
 
 export default function OrderDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams() as { id?: string };
   const [orderData, setOrderData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [appText, setAppText] = useState<any>({});
@@ -36,19 +36,23 @@ export default function OrderDetailPage() {
     const text = localStorage.getItem('app_text');
     if (text) setAppText(JSON.parse(text));
     
-    loadOrderData();
-    
-      // Refresh order data every 2 seconds for more accurate tracking
-      const interval = setInterval(() => {
-        loadOrderData();
-      }, 2000);
+    if (!params?.id) {
+      setLoading(false);
+      return;
+    }
+
+    loadOrderData(params.id);
+
+    const interval = setInterval(() => {
+      loadOrderData(params.id as string);
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [params.id]);
+  }, [params?.id]);
 
-  const loadOrderData = async () => {
+  const loadOrderData = async (orderId: string) => {
     try {
-      const response = await servexApi.orderDetail(params.id as string);
+      const response = await servexApi.orderDetail(orderId);
       
       if (response.data) {
         setOrderData(response.data);

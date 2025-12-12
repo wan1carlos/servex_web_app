@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Calendar, Clock, CreditCard, Wallet, MessageSquare } from 'lucide-react';
 import servexApi from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import { useCart } from '@/lib/cart-store';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -208,6 +209,12 @@ export default function CheckoutPage() {
     try {
       setLoading(true);
 
+      // Snapshot current cart items to preserve view post-order
+      try {
+        const cartItems = useCart.getState().items || [];
+        localStorage.setItem('last_cart_snapshot', JSON.stringify(cartItems));
+      } catch {}
+
       // Set the address coordinates temporarily for order placement
       const oldLat = localStorage.getItem('current_lat');
       const oldLng = localStorage.getItem('current_lng');
@@ -269,6 +276,7 @@ export default function CheckoutPage() {
         
         if (response.data) {
           localStorage.setItem('order_data', JSON.stringify(response.data));
+          // Optional: preserve snapshot for confirmation page consumption
           toast.success('Order placed successfully!');
           router.push(`/order/${response.data.data.id}`);
         }
@@ -277,6 +285,7 @@ export default function CheckoutPage() {
         
         if (response.data) {
           localStorage.setItem('order_data', JSON.stringify(response.data));
+          // Optional: preserve snapshot for confirmation page consumption
           toast.success('Order placed successfully!');
           router.push(`/order/${response.data.data.id}`);
         }

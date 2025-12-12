@@ -58,10 +58,13 @@ export const useCart = create<CartState>()(
           // Check response structure from mobile app
           if (response.data && !response.data.error) {
             // Update cart count and items from response
+            const nextItems = response.data.cart || [];
+            const nextCount = (Array.isArray(nextItems) ? nextItems.length : 0) || (response.data.count || 0);
             set({ 
-              count: response.data.count || 0,
-              items: response.data.cart || []
+              count: nextCount,
+              items: nextItems
             });
+            try { localStorage.setItem('cart_count', String(nextCount)); } catch {}
             // Fetch updated cart count (ignore errors)
             get().getCartCount().catch(() => {});
             return { success: true };
@@ -85,11 +88,15 @@ export const useCart = create<CartState>()(
           const response = await servexApi.getCart(state.cartNo);
           
           if (response.data) {
+            const nextItems = response.data.data || [];
+            const nextCount = Array.isArray(nextItems) ? nextItems.length : 0;
             set({
               cartData: response.data,
-              items: response.data.data || [],
+              items: nextItems,
+              count: nextCount,
               isLoading: false,
             });
+            try { localStorage.setItem('cart_count', String(nextCount)); } catch {}
           } else {
             set({ isLoading: false });
           }
@@ -105,11 +112,15 @@ export const useCart = create<CartState>()(
           const response = await servexApi.updateCart(cartId, type);
           
           if (response.data) {
+            const nextItems = response.data.data || [];
+            const nextCount = Array.isArray(nextItems) ? nextItems.length : 0;
             set({
               cartData: response.data,
-              items: response.data.data || [],
+              items: nextItems,
+              count: nextCount,
               isLoading: false,
             });
+            try { localStorage.setItem('cart_count', String(nextCount)); } catch {}
             // Fetch updated cart count (ignore errors)
             get().getCartCount().catch(() => {});
           }
@@ -125,17 +136,30 @@ export const useCart = create<CartState>()(
 
         try {
           const response = await servexApi.cartCount(state.cartNo);
-          set({ count: response.data || 0 });
+          const serverCount = Number(response?.data ?? 0);
+          const itemsLen = Array.isArray(state.items) ? state.items.length : 0;
+          // Prefer local items length; fallback to server; final fallback to cached localStorage
+          let nextCount = itemsLen > 0 ? itemsLen : serverCount;
+          if (!nextCount) {
+            const cached = localStorage.getItem('cart_count');
+            if (cached) nextCount = Number(cached) || 0;
+          }
+          set({ count: nextCount });
+          try { localStorage.setItem('cart_count', String(nextCount)); } catch {}
         } catch (error) {
           console.error('Get cart count error:', error);
-          // Set count to 0 on error to prevent UI issues
-          set({ count: 0 });
+          // Do not overwrite count to 0 on error; keep last known value
+          const cached = localStorage.getItem('cart_count');
+          if (cached) {
+            set({ count: Number(cached) || get().count });
+          }
         }
       },
 
       clearCart: () => {
         const newCartNo = String(Math.floor(Math.random() * 2000000000) + 1);
         localStorage.setItem('cart_no', newCartNo);
+        try { localStorage.setItem('cart_count', '0'); } catch {}
         set({
           cartNo: newCartNo,
           items: [],
@@ -148,6 +172,7 @@ export const useCart = create<CartState>()(
       name: 'cart-storage',
       partialize: (state) => ({
         cartNo: state.cartNo,
+        count: state.count,
       }),
     }
   )

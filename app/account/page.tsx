@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ShoppingBag, MapPin, Home, LogOut, Save, User as UserIcon, Phone, Mail, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, MapPin, Home, LogOut, Save, User as UserIcon, Phone, Mail, MessageSquare, Settings } from 'lucide-react';
 import servexApi from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
@@ -44,7 +44,9 @@ export default function AccountPage() {
       if (response.data) {
         setUserData(response.data);
         localStorage.setItem('user_data', JSON.stringify(response.data));
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">{appText.account_title || 'My Account'}</h3>
+        setFormData({
+          name: response.data.name || '',
+          phone: response.data.phone || '',
           email: response.data.email || '',
           whatsapp_no: response.data.whatsapp_no || ''
         });
@@ -58,7 +60,12 @@ export default function AccountPage() {
     } catch (error) {
       console.error('Error loading user data:', error);
       toast.error('Failed to load account data');
-                    {/* Edit button removed; tabs below handle navigation */}
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
     if (confirm('Are you sure you want to logout?')) {
       localStorage.clear();
       toast.success('Logged out successfully');
@@ -105,14 +112,6 @@ export default function AccountPage() {
     }
   };
 
-  if (loading) {
-    return (
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Settings</h3>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600">
       {/* Header */}
@@ -141,8 +140,8 @@ export default function AccountPage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  {/* Account Header */}
-                  <div className="px-4 pb-8 text-white">
+                  <p className="text-white/60 text-xs">Email</p>
+                  <p className="text-white font-medium">{userData?.email || 'Not provided'}</p>
                 </div>
               </div>
               
@@ -165,32 +164,7 @@ export default function AccountPage() {
       {/* Menu Section */}
       <div className="bg-white rounded-t-[2rem] px-4 pt-6 pb-20 min-h-[60vh]">
         <div className="max-w-7xl mx-auto">
-          <h3 className="text-lg font-semibold text-gray-600 mb-4">
-            {appText.account_title || 'My Account'}
-          </h3>
-
-          <div className="space-y-2">
-            {/* Account Settings */}
-            <button
-              onClick={() => router.push('/settings')}
-              className="w-full flex items-center gap-4 p-4 bg-white hover:bg-gray-50 rounded-xl shadow-sm transition"
-                          <div className="pt-2">
-                            <button
-                              onClick={() => setView('edit')}
-                              className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium"
-                            >
-                              Edit Profile
-                            </button>
-                          </div>
-            >
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Settings className="w-5 h-5 text-pink-600" />
-              </div>
-              <span className="flex-1 text-left font-medium">
-                  {/* Content Section */}
-                  <div className="bg-white rounded-t-[2rem] px-4 pt-6 pb-20 min-h-[60vh]">
-              <ArrowLeft className="w-5 h-5 text-gray-400 rotate-180" />
-                      {view === 'overview' ? (
+          {view === 'overview' ? (
                         <>
                           <h3 className="text-lg font-semibold text-gray-600 mb-4">
                             {appText.account_title || 'My Account'}
@@ -343,3 +317,8 @@ export default function AccountPage() {
                           </form>
                         </>
                       )}
+        </div>
+      </div>
+    </div>
+  );
+}

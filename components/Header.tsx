@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 export default function Header() {
   const pathname = usePathname();
   const { isAuthenticated, user, logout } = useAuth();
-  const { count, initializeCart, getCartCount } = useCart();
+  const { count, items, initializeCart, getCartCount } = useCart();
   const { currentAddress } = useApp();
   const [mounted, setMounted] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -24,6 +24,24 @@ export default function Header() {
       console.log('Cart count fetch failed, continuing with count=0');
     });
   }, [initializeCart, getCartCount]);
+
+  // Periodically refresh cart count until items are loaded, then stop
+  useEffect(() => {
+    if (!mounted) return;
+
+    let intervalId: any = null;
+    const shouldPoll = !Array.isArray(items) || items.length === 0;
+
+    if (shouldPoll) {
+      intervalId = setInterval(() => {
+        getCartCount().catch(() => {});
+      }, 10000); // every 10s
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [mounted, items, getCartCount]);
 
   if (!mounted) return null;
 
@@ -71,11 +89,11 @@ export default function Header() {
             {isAuthenticated && (
               <Link href="/cart" className="relative hover:text-pink-600">
                 <ShoppingCart className="w-6 h-6" />
-                {count > 0 && (
+                {(Array.isArray(items) && items.length > 0) || count > 0 ? (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {count}
+                    {Array.isArray(items) && items.length > 0 ? items.length : count}
                   </span>
-                )}
+                ) : null}
               </Link>
             )}
 
