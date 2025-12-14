@@ -36,23 +36,23 @@ export default function AccountPage() {
   };
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const userId = localStorage.getItem('user_id');
-      const response = await servexApi.userInfo(userId as string);
-      
-      if (response.data) {
-        setUserData(response.data);
-        localStorage.setItem('user_data', JSON.stringify(response.data));
-        setFormData({
-          name: response.data.name || '',
-          phone: response.data.phone || '',
-          email: response.data.email || '',
-          whatsapp_no: response.data.whatsapp_no || ''
-        });
-        
-        // Load app text
-        const text = localStorage.getItem('app_text');
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  onChange={() => {}}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                  placeholder="your@email.com"
+                  readOnly
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Email is managed via Google sign-in and cannot be changed.</p>
+            </div>
         if (text) {
           setAppText(JSON.parse(text));
         }

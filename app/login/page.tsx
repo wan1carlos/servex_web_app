@@ -49,6 +49,7 @@ export default function LoginPage() {
           <h2 className="text-3xl font-bold text-center mb-2">Welcome Back</h2>
           <p className="text-gray-600 text-center mb-8">Sign in to continue</p>
 
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
