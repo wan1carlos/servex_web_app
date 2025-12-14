@@ -36,26 +36,22 @@ export default function AccountPage() {
   };
 
   const loadData = async () => {
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  value={user?.email || ''}
-                  onChange={() => {}}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                  placeholder="your@email.com"
-                  readOnly
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Email is managed via Google sign-in and cannot be changed.</p>
-            </div>
-        if (text) {
-          setAppText(JSON.parse(text));
-        }
+    try {
+      const userStr = localStorage.getItem('user_data');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUserData(user);
+        setFormData({
+          name: user.name || '',
+          phone: user.phone || '',
+          email: user.email || '',
+          whatsapp_no: user.whatsapp_no || ''
+        });
+      }
+
+      const text = localStorage.getItem('app_text');
+      if (text) {
+        setAppText(JSON.parse(text));
       }
     } catch (error) {
       console.error('Error loading user data:', error);
