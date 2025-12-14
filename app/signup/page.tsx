@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User as UserIcon, Phone, Eye, EyeOff } from 'lucide-react';
@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,6 +18,13 @@ export default function SignupPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If already logged in, send to home dashboard
+    if (isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +56,8 @@ export default function SignupPage() {
 
     if (result.success) {
       toast.success('Account created successfully!');
-      const hasCart = localStorage.getItem('cart_no');
-      router.push(hasCart ? '/cart' : '/home');
+      // Always go to home dashboard to browse stores
+      router.replace('/home');
     } else {
       toast.error(result.message || 'Signup failed');
     }
