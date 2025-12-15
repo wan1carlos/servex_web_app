@@ -27,6 +27,17 @@ export default function CartPage() {
 
       // If already authenticated in store, just load cart
       if (useAuth.getState().isAuthenticated) {
+        // Check if location is set before loading cart
+        const currentLat = localStorage.getItem('current_lat');
+        const currentLng = localStorage.getItem('current_lng');
+        if (!currentLat || !currentLng || currentLat === 'null' || currentLng === 'null') {
+          toast.error('Please set your delivery location first');
+          // Redirect to location page after a short delay
+          setTimeout(() => {
+            window.location.href = '/location';
+          }, 1500);
+          return;
+        }
         await loadCart();
         return;
       }
@@ -37,6 +48,17 @@ export default function CartPage() {
         try {
           await useAuth.getState().loadUser();
           if (useAuth.getState().isAuthenticated) {
+            // Check if location is set before loading cart
+            const currentLat = localStorage.getItem('current_lat');
+            const currentLng = localStorage.getItem('current_lng');
+            if (!currentLat || !currentLng || currentLat === 'null' || currentLng === 'null') {
+              toast.error('Please set your delivery location first');
+              // Redirect to location page after a short delay
+              setTimeout(() => {
+                window.location.href = '/location';
+              }, 1500);
+              return;
+            }
             await loadCart();
             return;
           }
