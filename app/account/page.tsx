@@ -37,25 +37,21 @@ export default function AccountPage() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      const userId = localStorage.getItem('user_id');
-      const response = await servexApi.userInfo(userId as string);
-      
-      if (response.data) {
-        setUserData(response.data);
-        localStorage.setItem('user_data', JSON.stringify(response.data));
+      const userStr = localStorage.getItem('user_data');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        setUserData(user);
         setFormData({
-          name: response.data.name || '',
-          phone: response.data.phone || '',
-          email: response.data.email || '',
-          whatsapp_no: response.data.whatsapp_no || ''
+          name: user.name || '',
+          phone: user.phone || '',
+          email: user.email || '',
+          whatsapp_no: user.whatsapp_no || ''
         });
-        
-        // Load app text
-        const text = localStorage.getItem('app_text');
-        if (text) {
-          setAppText(JSON.parse(text));
-        }
+      }
+
+      const text = localStorage.getItem('app_text');
+      if (text) {
+        setAppText(JSON.parse(text));
       }
     } catch (error) {
       console.error('Error loading user data:', error);

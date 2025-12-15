@@ -9,19 +9,24 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Add response interceptor to handle errors
+// Add response interceptor to handle errors without noisy overlay logs
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log the error for debugging
-    console.error('API Error:', error.message);
-    
-    // Handle network errors gracefully
+    const status = error?.response?.status;
+    const backendMsg = error?.response?.data?.message || error?.response?.data?.error;
+    const endpoint = error?.config?.url;
+    // Use warn to avoid React Dev Overlay aggressive error capture
+    console.warn('API request failed:', {
+      status,
+      endpoint,
+      message: error?.message,
+      backend: backendMsg,
+    });
+
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-      console.warn('Network error detected. Please check your internet connection.');
+      console.warn('Network issue detected. Check your connection.');
     }
-    
-    // Still throw the error so it can be caught by the calling code
     return Promise.reject(error);
   }
 );

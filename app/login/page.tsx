@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -9,11 +9,18 @@ import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If already logged in, send to home dashboard
+    if (isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +36,7 @@ export default function LoginPage() {
 
     if (result.success) {
       toast.success('Login successful!');
-      router.push('/home');
+      router.replace('/home');
     } else {
       toast.error(result.message || 'Login failed');
     }
@@ -41,6 +48,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-3xl font-bold text-center mb-2">Welcome Back</h2>
           <p className="text-gray-600 text-center mb-8">Sign in to continue</p>
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

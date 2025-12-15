@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { usePathname } from "next/navigation";
+import { SessionProvider } from "next-auth/react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,10 +31,12 @@ export default function RootLayout({
         <meta name="description" content="Order from your favorite stores and get delivery to your doorstep" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <Toaster position="top-center" />
-        {!isStoreOwnerPage && !isDeliveryPage && <Header />}
-        <main className="min-h-screen">{children}</main>
-        {!isStoreOwnerPage && !isDeliveryPage && <Footer />}
+        <SessionProvider>
+          <Toaster position="top-center" />
+          {!isStoreOwnerPage && !isDeliveryPage && <Header />}
+          <main className="min-h-screen">{children}</main>
+          {!isStoreOwnerPage && !isDeliveryPage && <Footer />}
+        </SessionProvider>
       </body>
     </html>
   );

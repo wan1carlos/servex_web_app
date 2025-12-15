@@ -86,12 +86,19 @@ export const useCart = create<CartState>()(
         try {
           set({ isLoading: true });
           const response = await servexApi.getCart(state.cartNo);
-          
-          if (response.data) {
-            const nextItems = response.data.data || [];
-            const nextCount = Array.isArray(nextItems) ? nextItems.length : 0;
+          const payload = response?.data ?? response;
+          if (payload) {
+            // Support both { data: [...] } and direct array/object payloads
+            const nextItems = Array.isArray(payload?.data)
+              ? payload.data
+              : Array.isArray(payload?.cart)
+              ? payload.cart
+              : Array.isArray(payload)
+              ? payload
+              : [];
+            const nextCount = Array.isArray(nextItems) ? nextItems.length : Number(payload?.count ?? 0);
             set({
-              cartData: response.data,
+              cartData: payload,
               items: nextItems,
               count: nextCount,
               isLoading: false,
@@ -101,7 +108,7 @@ export const useCart = create<CartState>()(
             set({ isLoading: false });
           }
         } catch (error) {
-          console.error('Load cart error:', error);
+          console.warn('Load cart error:', error);
           set({ isLoading: false });
         }
       },
@@ -110,12 +117,18 @@ export const useCart = create<CartState>()(
         try {
           set({ isLoading: true });
           const response = await servexApi.updateCart(cartId, type);
-          
-          if (response.data) {
-            const nextItems = response.data.data || [];
-            const nextCount = Array.isArray(nextItems) ? nextItems.length : 0;
+          const payload = response?.data ?? response;
+          if (payload) {
+            const nextItems = Array.isArray(payload?.data)
+              ? payload.data
+              : Array.isArray(payload?.cart)
+              ? payload.cart
+              : Array.isArray(payload)
+              ? payload
+              : [];
+            const nextCount = Array.isArray(nextItems) ? nextItems.length : Number(payload?.count ?? 0);
             set({
-              cartData: response.data,
+              cartData: payload,
               items: nextItems,
               count: nextCount,
               isLoading: false,
@@ -125,7 +138,7 @@ export const useCart = create<CartState>()(
             get().getCartCount().catch(() => {});
           }
         } catch (error) {
-          console.error('Update cart error:', error);
+          console.warn('Update cart error:', error);
           set({ isLoading: false });
         }
       },

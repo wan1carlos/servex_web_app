@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Mail, Lock, User as UserIcon, Phone, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/auth-store';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, isAuthenticated } = useAuth();
+  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,8 +22,27 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // If already logged in, send to home dashboard
+    if (isAuthenticated) {
+      router.replace('/home');
+    }
+  }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    // Prefill email from Google session and make it read-only
+    if (session?.user?.email) {
+      setFormData((prev) => ({ ...prev, email: session.user!.email as string }));
+    }
+  }, [session]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Require Google-connected email
+    if (!session?.user?.email) {
+      toast.error('Please continue with Google to auto-fill your email');
+      return;
+    }
     
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       toast.error('Please fill in all fields');
@@ -49,8 +71,8 @@ export default function SignupPage() {
 
     if (result.success) {
       toast.success('Account created successfully!');
-      const hasCart = localStorage.getItem('cart_no');
-      router.push(hasCart ? '/cart' : '/home');
+      // Always go to home dashboard to browse stores
+      router.replace('/home');
     } else {
       toast.error(result.message || 'Signup failed');
     }
@@ -62,6 +84,14 @@ export default function SignupPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-3xl font-bold text-center mb-2">Create Account</h2>
           <p className="text-gray-600 text-center mb-8">Join ServEx today</p>
+
+          <button
+            type="button"
+            onClick={() => signIn('google', { callbackUrl: '/signup' })}
+            className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition mb-6"
+          >
+            Continue with Google
+          </button>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -91,9 +121,16 @@ export default function SignupPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder="your@email.com"
+                  placeholder={session?.user?.email ? "your@email.com" : "Connect with Google to fill"}
+                  readOnly
+                  disabled={!session?.user?.email}
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {session?.user?.email
+                  ? 'Email fetched from Google and locked.'
+                  : 'Email cannot be edited. Click Continue with Google to fill this automatically.'}
+              </p>
             </div>
 
             <div>
