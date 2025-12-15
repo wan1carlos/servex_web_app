@@ -37,7 +37,7 @@ export default function OrderMap({
 
   // Effect to track rider position and create trail
   useEffect(() => {
-    if (!mapRef.current || !leafletRef.current || !riderLat || !riderLng || (orderStatus !== 3 && orderStatus !== 4)) {
+    if (!mapRef.current || !leafletRef.current || !riderLat || !riderLng || (typeof orderStatus !== 'number' || (orderStatus !== 3 && orderStatus !== 4))) {
       return;
     }
 
@@ -171,11 +171,11 @@ export default function OrderMap({
         orderStatus
       });
 
-      // Add store marker (blue) - Only show before rider picks up from store (status < 4)
+      // Add store marker (blue) - Show for assigned orders to indicate pickup location
       if (
         typeof storeLat === 'number' && !isNaN(storeLat) &&
         typeof storeLng === 'number' && !isNaN(storeLng) &&
-        (!orderStatus || orderStatus < 4)
+        typeof orderStatus === 'number' && orderStatus >= 3 && orderStatus !== 5
       ) {
         const storeIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
@@ -188,7 +188,7 @@ export default function OrderMap({
         
         L.marker([storeLat, storeLng], { icon: storeIcon })
           .addTo(map)
-          .bindPopup('Store Location');
+          .bindPopup(orderStatus === 3 ? 'Store - Pickup Location' : 'Store - Order Picked Up From');
       }
 
       // Add delivery marker (red)
@@ -214,7 +214,7 @@ export default function OrderMap({
       if (
         typeof riderLat === 'number' && !isNaN(riderLat) &&
         typeof riderLng === 'number' && !isNaN(riderLng) &&
-        (orderStatus === 3 || orderStatus === 4)
+        typeof orderStatus === 'number' && (orderStatus === 3 || orderStatus === 4 || orderStatus === 5)
       ) {
         const riderIcon = L.icon({
           iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -228,7 +228,9 @@ export default function OrderMap({
         // Determine rider status message
         const riderStatusMessage = orderStatus === 3 
           ? '🛵 Rider - Going to Store for Pickup' 
-          : '🛵 Rider - Delivering to You';
+          : orderStatus === 4
+          ? '🛵 Rider - Delivering to You'
+          : '🛵 Rider - Order Delivered';
         
         const riderMarker = L.marker([riderLat, riderLng], { icon: riderIcon })
           .addTo(map)
@@ -256,24 +258,35 @@ export default function OrderMap({
       });
 
       // Create route if we have at least delivery location and either store or rider location
-      const canCreateRoute = deliveryLat && deliveryLng && (
+      const canCreateRoute = deliveryLat && deliveryLng && (typeof orderStatus !== 'number' || orderStatus !== 5) && (
         (storeLat && storeLng) || (riderLat && riderLng)
       );
 
       if (canCreateRoute) {
-        let startLat, startLng;
-        // Determine start point based on what's available
-        if ((orderStatus === 3 || orderStatus === 4) && riderLat && riderLng) {
-          startLat = parseFloat(riderLat as any);
-          startLng = parseFloat(riderLng as any);
+        let waypoints = [];
+        
+        // Determine waypoints based on order status
+        if (orderStatus === 3 && riderLat && riderLng && storeLat && storeLng) {
+          // Status 3: Rider -> Store -> Delivery
+          waypoints = [
+            L.latLng(riderLat, riderLng),
+            L.latLng(storeLat, storeLng),
+            L.latLng(deliveryLat, deliveryLng)
+          ];
+        } else if (orderStatus === 4 && riderLat && riderLng) {
+          // Status 4: Rider -> Delivery
+          waypoints = [
+            L.latLng(riderLat, riderLng),
+            L.latLng(deliveryLat, deliveryLng)
+          ];
         } else if (storeLat && storeLng) {
-          startLat = parseFloat(storeLat as any);
-          startLng = parseFloat(storeLng as any);
-        } else if (riderLat && riderLng) {
-          startLat = parseFloat(riderLat as any);
-          startLng = parseFloat(riderLng as any);
+          // Fallback: Store -> Delivery
+          waypoints = [
+            L.latLng(storeLat, storeLng),
+            L.latLng(deliveryLat, deliveryLng)
+          ];
         } else {
-          console.log('No valid start point for routing');
+          console.log('No valid waypoints for routing');
           mapRef.current = map;
           setTimeout(() => {
             if (mapRef.current) {
@@ -283,17 +296,14 @@ export default function OrderMap({
           return;
         }
 
-        const endLat = parseFloat(deliveryLat as any);
-        const endLng = parseFloat(deliveryLng as any);
-
         // Check for valid coordinates before creating route
-        if (
-          typeof startLat === 'number' && !isNaN(startLat) &&
-          typeof startLng === 'number' && !isNaN(startLng) &&
-          typeof endLat === 'number' && !isNaN(endLat) &&
-          typeof endLng === 'number' && !isNaN(endLng)
-        ) {
-          console.log('Attempting to create route from', [startLat, startLng], 'to', [endLat, endLng]);
+        const validWaypoints = waypoints.filter(wp => 
+          typeof wp.lat === 'number' && !isNaN(wp.lat) &&
+          typeof wp.lng === 'number' && !isNaN(wp.lng)
+        );
+
+        if (validWaypoints.length >= 2) {
+          console.log('Attempting to create route with waypoints:', validWaypoints.map(wp => [wp.lat, wp.lng]));
           console.log('L.Routing available:', !!(L as any).Routing);
           console.log('L.Routing.control available:', !!(L as any).Routing?.control);
 
@@ -301,24 +311,21 @@ export default function OrderMap({
             try {
               console.log('Creating routing control...');
               // Always use green route when rider is active (status 3 or 4)
-              // Status 3: Rider going to store (green route from rider to store)
-              // Status 4: Rider going to customer (green route from rider to customer)
-              const routeColor = (orderStatus === 3 || orderStatus === 4) && riderLat && riderLng 
+              // Status 3: Rider going to store (green route from rider to store to delivery)
+              // Status 4: Rider going to customer (green route from rider to delivery)
+              const routeColor = (typeof orderStatus === 'number' && (orderStatus === 3 || orderStatus === 4) && riderLat && riderLng) 
                 ? '#10B981' // Green for active rider route (Tailwind green-500)
                 : '#6FA1EC'; // Blue for store route (when no rider assigned yet)
               
               const routingControl = (L as any).Routing.control({
-                waypoints: [
-                  L.latLng(startLat, startLng),
-                  L.latLng(endLat, endLng)
-                ],
+                waypoints: validWaypoints,
                 routeWhileDragging: false,
                 showAlternatives: false,
                 fitSelectedRoutes: true,
                 addWaypoints: false,
                 draggableWaypoints: false,
                 lineOptions: {
-                  styles: [{ color: routeColor, weight: 5, opacity: 0.3 }]
+                  styles: [{ color: routeColor, weight: 5, opacity: 0.7 }]
                 },
                 createMarker: function() { return null; }
               });
@@ -341,7 +348,7 @@ export default function OrderMap({
             console.warn('L.Routing.control not available - routing disabled');
           }
         } else {
-          console.warn('Invalid or missing route coordinates - routing disabled', { startLat, startLng, endLat, endLng });
+          console.warn('Invalid or missing route coordinates - routing disabled', { waypoints: validWaypoints.map(wp => [wp.lat, wp.lng]) });
         }
       } else {
         console.log('Cannot create route - missing required coordinates');
