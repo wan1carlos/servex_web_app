@@ -1,0 +1,21 @@
+# Public Environment Variables (accessible in browser)
+NEXT_PUBLIC_API_BASE_URL=https://bsitport2026.com/servex/api/
+NEXT_PUBLIC_APP_NAME=Servex
+NEXT_PUBLIC_APP_VERSION=1.0.0
+NEXT_PUBLIC_NEXTAUTH_URL=http://localhost:3000
+
+# Public Email Configuration (safe to expose)
+NEXT_PUBLIC_SUPPORT_EMAIL=support112825@gmail.com
+NEXT_PUBLIC_FROM_EMAIL=support112825@gmail.com
+
+# Private Environment Variables (server-side only)
+GOOGLE_CLIENT_ID=1049848679463-a6lpccjmtut7huhc7gku7efohjvgip3l.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+NEXTAUTH_URL=http://localhost:3000
+RESEND_API_KEY=re_fBvHem9p_BvN7Te4BbnZSbrUKxT1TPkrG
+FROM_EMAIL=support112825@gmail.com
+NEXTAUTH_SECRET=36c8c2e0-1f4a-4b7e-b4c2-2c7a6ad8c3ad8e2f07f3-5e3b-4c76-a1d1-9b2f6c21a7b2
+
+# Gmail SMTP Configuration (KEEP PRIVATE - server-side only)
+GMAIL_USER=villaadonica0@gmail.com
+GMAIL_APP_PASSWORD=cajnlogkqxszjnwb
