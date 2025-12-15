@@ -202,7 +202,7 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Rider Details Section */}
-        {orderData.dboy && (orderData.st === 3 || orderData.st === 4) && (
+        {orderData.dboy && orderData.st >= 3 && (
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
               {orderData.dboy_image ? (
