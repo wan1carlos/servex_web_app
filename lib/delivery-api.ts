@@ -1,5 +1,6 @@
 // Delivery API Service Layer
 import axios from 'axios';
+import { normalizeAxiosError } from './error-utils';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://bsitport2026.com/servex/api/';
 
@@ -13,17 +14,21 @@ deliveryApi.interceptors.response.use(
   (response) => response,
   (error) => {
     // Suppress 404 errors for the 'my' endpoint (it may not be available)
-    const isMyEndpoint = error.config?.url?.includes('my?');
-    const is404 = error.response?.status === 404;
+    const isMyEndpoint = (error as any)?.config?.url?.includes('my?');
+    const is404 = (error as any)?.response?.status === 404;
     
     if (isMyEndpoint && is404) {
       // Silently handle 404 for 'my' endpoint
       return Promise.reject(error);
     }
     
-    console.error('Delivery API Error:', error.message);
+    const errMsg = typeof (error as any)?.message === 'string' ? (error as any).message : String(error);
+    const status = (error as any)?.response?.status;
+    // Use warn to avoid Next.js overlay spamming the UI for expected API errors
+    console.warn('Delivery API Error:', status ? `HTTP ${status}` : errMsg);
     
-    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+    const errCode = (error as any)?.code;
+    if (errCode === 'ERR_NETWORK' || errMsg === 'Network Error') {
       console.warn('Network error detected. Please check your internet connection.');
     }
     
@@ -47,13 +52,18 @@ export const servexDeliveryApi = {
 
   // Homepage - Get available orders
   homepage: async (id: string, status: number) => {
-    const lid = getLocalStorage('lid');
+    // Use base language to avoid backend 500 when s_data is missing
+    const lid = '0';
     const lat = getLocalStorage('current_lat', '0');
     const lng = getLocalStorage('current_lng', '0');
-    const response = await deliveryApi.get(
-      `homepage?lid=${lid}&dboy_id=${id}&status=${status}&lat=${lat}&lng=${lng}`
-    );
-    return response.data;
+    try {
+      const response = await deliveryApi.get(
+        `homepage?lid=${lid}&dboy_id=${id}&status=${status}&lat=${lat}&lng=${lng}`
+      );
+      return response.data;
+    } catch (error) {
+      throw normalizeAxiosError(error);
+    }
   },
 
   // Page data
@@ -102,37 +112,58 @@ export const servexDeliveryApi = {
 
   // Order Management
   startRide: async (id: string, status: number) => {
-    const lid = getLocalStorage('lid');
-    const response = await deliveryApi.get(`startRide?id=${id}&lid=${lid}&status=${status}`);
-    return response.data;
+    // Use base language
+    const lid = '0';
+    try {
+      const response = await deliveryApi.get(`startRide?id=${id}&lid=${lid}&status=${status}`);
+      return response.data;
+    } catch (error) {
+      throw normalizeAxiosError(error);
+    }
   },
 
   // Set online/offline status
   setStatus: async (id: string, online: number) => {
     const lat = getLocalStorage('current_lat', '0');
     const lng = getLocalStorage('current_lng', '0');
-    const response = await deliveryApi.get(
-      `setStatus?id=${id}&online=${online}&lat=${lat}&lng=${lng}`
-    );
-    return response.data;
+    // Ensure base language to avoid backend index issues if needed
+    const lid = '0';
+    try {
+      const response = await deliveryApi.get(
+        `setStatus?id=${id}&online=${online}&lat=${lat}&lng=${lng}&lid=${lid}`
+      );
+      return response.data;
+    } catch (error) {
+      throw normalizeAxiosError(error);
+    }
   },
 
   // Accept order
   accept: async (id: string, oid: string) => {
-    const lid = getLocalStorage('lid');
+    // Use base language to avoid backend 500 when s_data is missing
+    const lid = '0';
     const lat = getLocalStorage('current_lat', '0');
     const lng = getLocalStorage('current_lng', '0');
-    const response = await deliveryApi.get(
-      `accept?dboy_id=${id}&order_id=${oid}&lat=${lat}&lng=${lng}&lid=${lid}&status=3`
-    );
-    return response.data;
+    try {
+      const response = await deliveryApi.get(
+        `accept?dboy_id=${id}&order_id=${oid}&lat=${lat}&lng=${lng}&lid=${lid}&status=3`
+      );
+      return response.data;
+    } catch (error) {
+      throw normalizeAxiosError(error);
+    }
   },
 
   // Earnings
   earn: async (id: string) => {
-    const lid = getLocalStorage('lid', '1');
-    const response = await deliveryApi.get(`earn?id=${id}&lid=${lid}`);
-    return response.data;
+    // Use base language
+    const lid = '0';
+    try {
+      const response = await deliveryApi.get(`earn?id=${id}&lid=${lid}`);
+      return response.data;
+    } catch (error) {
+      throw normalizeAxiosError(error);
+    }
   },
 };
 

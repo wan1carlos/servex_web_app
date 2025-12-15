@@ -85,7 +85,8 @@ function DeliveryDetailContent() {
           console.log('Delivery location set:', latitude, longitude);
         },
         (error) => {
-          console.error('Error getting location:', error);
+          const msg = (error && (error as any).message) || 'Permission denied or unavailable';
+          console.warn('Error getting location:', msg);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -99,7 +100,8 @@ function DeliveryDetailContent() {
           console.log('Delivery location updated:', latitude, longitude);
         },
         (error) => {
-          console.error('Error watching location:', error);
+          const msg = (error && (error as any).message) || 'Permission denied or unavailable';
+          console.warn('Error watching location:', msg);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -111,7 +113,8 @@ function DeliveryDetailContent() {
             await servexDeliveryApi.setStatus(userId, 1);
             console.log('Delivery location sent to server');
           } catch (error) {
-            console.error('Error sending location to server:', error);
+            const status = (error as any)?.status || (error as any)?.response?.status;
+            console.warn('Error sending location to server', status ? `(HTTP ${status})` : '');
           }
         }
       }, 10000);
@@ -143,16 +146,27 @@ function DeliveryDetailContent() {
     try {
       setLoading(true);
       const response = await servexDeliveryApi.startRide(orderId, statusType);
+      const ok = response && response.data && response.data !== 'error';
+      if (!ok) {
+        throw new Error('Server rejected start/complete action');
+      }
 
       if (statusType === 5) {
-        toast.success(text.d_order_delivered || 'Order delivered successfully!');
+        toast.success(text?.d_order_delivered || 'Order delivered successfully!');
+        // Update local storage status to delivered for consistency
+        const updated = { ...(orderData as any), st: 5 };
+        localStorage.setItem('delivery_order_data', JSON.stringify(updated));
         router.push('/delivery/home');
       } else {
-        toast.success(text.d_order_start || 'Ride started!');
+        toast.success(text?.d_order_start || 'Ride started!');
+        // Update status immediately for UI responsiveness
         setStatus(4);
+        const updated = { ...(orderData as any), st: 4 };
+        localStorage.setItem('delivery_order_data', JSON.stringify(updated));
       }
     } catch (error) {
-      console.error('Error updating order:', error);
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      console.warn('Error updating order', status ? `(HTTP ${status})` : '');
       toast.error('Failed to update order');
     } finally {
       setLoading(false);

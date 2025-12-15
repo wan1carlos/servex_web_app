@@ -1,0 +1,40 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build project to verify fix",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Rebuild after interceptor update",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Build after error handling updates",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Build with error normalizer",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Rebuild after fixing auth route exports",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Build after lid=0 change",
+			"type": "shell",
+			"command": "npm run build"
+		},
+		{
+			"label": "Rebuild after forcing dynamic API route",
+			"type": "shell",
+			"command": "npm run build"
+		}
+	]
+}

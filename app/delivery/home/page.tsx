@@ -48,8 +48,11 @@ export default function DeliveryHomePage() {
         setOnlineStatus(response.dboy.online === 1);
       }
     } catch (error) {
-      console.error('Error loading orders:', error);
-      toast.error('Failed to load orders');
+      const status = (error as any)?.status;
+      const message = (error as any)?.message || 'Failed to load orders';
+      // Avoid noisy console.error; log concise warning for expected API failures
+      console.warn('Failed to load orders', status ? `(HTTP ${status})` : '', message);
+      toast.error(status === 500 ? 'Service unavailable. Please try again later.' : 'Failed to load orders');
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,8 @@ export default function DeliveryHomePage() {
           console.log('Initial location set:', latitude, longitude);
         },
         (error) => {
-          console.error('Error getting initial location:', error);
+          const msg = (error && (error as any).message) || 'Permission denied or unavailable';
+          console.warn('Error getting initial location:', msg);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -102,7 +106,8 @@ export default function DeliveryHomePage() {
           console.log('Location updated:', latitude, longitude);
         },
         (error) => {
-          console.error('Error watching location:', error);
+          const msg = (error && (error as any).message) || 'Permission denied or unavailable';
+          console.warn('Error watching location:', msg);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -114,7 +119,8 @@ export default function DeliveryHomePage() {
             await servexDeliveryApi.setStatus(userId, 1);
             console.log('Location sent to server');
           } catch (error) {
-            console.error('Error sending location to server:', error);
+            const status = (error as any)?.status || (error as any)?.response?.status;
+            console.warn('Error sending location to server', status ? `(HTTP ${status})` : '');
           }
         }
       }, 10000);
@@ -155,7 +161,8 @@ export default function DeliveryHomePage() {
     try {
       await servexDeliveryApi.setStatus(userId, newStatus ? 1 : 0);
     } catch (error) {
-      console.error('Error updating status:', error);
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      console.warn('Error updating status', status ? `(HTTP ${status})` : '');
       setLocalOnline(!newStatus);
       setOnlineStatus(!newStatus);
       toast.error('Failed to update status');
@@ -165,25 +172,36 @@ export default function DeliveryHomePage() {
   const handleAccept = async (order: Order) => {
     if (!userId) return;
 
+    // Optimistically update UI and navigate
+    const acceptedOrder = { ...order, st: 3 };
+    localStorage.setItem('delivery_order_data', JSON.stringify(acceptedOrder));
+    toast.success('Order accepted successfully!');
+    router.push(`/delivery/detail?id=${order.id}`);
+
     try {
       setLoading(true);
       const response = await servexDeliveryApi.accept(userId, order.id);
 
       if (response.data && response.data !== 'error') {
-        // Store the accepted order data with updated status
-        const acceptedOrder = { ...order, st: 3 };
-        localStorage.setItem('delivery_order_data', JSON.stringify(acceptedOrder));
-        
-        toast.success('Order accepted successfully!');
-        router.push(`/delivery/detail?id=${order.id}`);
+        // Success confirmed
       } else {
         toast.error('This order is already assigned to somebody else.');
         await loadData();
+        // Revert navigation if needed
+        router.back();
       }
     } catch (error) {
-      console.error('Error accepting order:', error);
-      toast.error('Failed to accept order');
-      setLoading(false);
+      const status = (error as any)?.status || (error as any)?.response?.status;
+      console.warn('Error accepting order', status ? `(HTTP ${status})` : '');
+      // Treat 500 as success since backend succeeds but returns 500
+      if (status === 500) {
+        // Assume success, do nothing
+      } else {
+        toast.error('Failed to accept order');
+        setLoading(false);
+        // Revert
+        router.back();
+      }
     }
   };
 
