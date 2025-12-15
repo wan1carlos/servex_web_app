@@ -229,28 +229,45 @@ export default function CheckoutPage() {
 
       // Extract store_id from checkout data
       console.log('===== EXTRACTING STORE_ID =====');
-      console.log('checkoutData?.data?.[0]?.store_id:', checkoutData?.data?.[0]?.store_id);
       console.log('checkoutData?.store?.id:', checkoutData?.store?.id);
       console.log('checkoutData?.store_id:', checkoutData?.store_id);
       console.log('localStorage store_id:', localStorage.getItem('store_id'));
       
-      const storeId = checkoutData?.data?.[0]?.store_id || 
-                      checkoutData?.store?.id || 
+      const storeId = checkoutData?.store?.id || 
                       checkoutData?.store_id ||
                       localStorage.getItem('store_id') || 
                       '0';
       
       console.log('Final storeId:', storeId);
+      
+      if (!storeId || storeId === '0') {
+        toast.error('Store information is missing. Please try again.');
+        return;
+      }
+
+      const userId = localStorage.getItem('user_id');
+      const cartNo = localStorage.getItem('cart_no');
+      
+      if (!userId) {
+        toast.error('User session expired. Please login again.');
+        router.push('/login');
+        return;
+      }
+      
+      if (!cartNo) {
+        toast.error('Cart information is missing. Please try again.');
+        return;
+      }
 
       const orderData: any = {
         payment: paymentMethod,
-        cart_no: localStorage.getItem('cart_no'),
+        cart_no: cartNo,
         payment_id: '0',
         otype: orderType,
         odate: orderDate,
         order_date: orderDate === '2' ? selectedDate : '',
         order_time: orderDate === '2' ? selectedTime : '',
-        user_id: localStorage.getItem('user_id'),
+        user_id: userId,
         store_id: storeId,
         address: selectedAddress,
         ecash: ecashAmount,

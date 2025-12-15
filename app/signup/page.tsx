@@ -3,24 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, User as UserIcon, Phone, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Phone, Eye, EyeOff, Send } from 'lucide-react';
 import { useAuth } from '@/lib/auth-store';
 import toast from 'react-hot-toast';
-import { useSession } from 'next-auth/react';
-import { signIn } from 'next-auth/react';
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup, isAuthenticated } = useAuth();
-  const { data: session } = useSession();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '09',
     password: '',
+    otp: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
     // If already logged in, send to home dashboard
@@ -29,23 +29,71 @@ export default function SignupPage() {
     }
   }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    // Prefill email from Google session and make it read-only
-    if (session?.user?.email) {
-      setFormData((prev) => ({ ...prev, email: session.user!.email as string }));
+  const validateGmail = (email: string) => {
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    return gmailRegex.test(email);
+  };
+
+  const handleSendOTP = async () => {
+    if (!formData.email) {
+      toast.error('Please enter your email address');
+      return;
     }
-  }, [session]);
+
+    if (!validateGmail(formData.email)) {
+      toast.error('Please use a valid Gmail address');
+      return;
+    }
+
+    console.log('Sending OTP for email:', formData.email);
+    setOtpLoading(true);
+    try {
+      const response = await fetch('/api/otp/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      console.log('OTP send response status:', response.status);
+      const data = await response.json();
+      console.log('OTP send response data:', data);
+
+      if (data.success) {
+        toast.success(`OTP sent to your Gmail! Check your inbox.`);
+        setOtpSent(true);
+      } else {
+        toast.error(data.error || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('OTP send error:', error);
+      toast.error('Failed to send OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Require Google-connected email
-    if (!session?.user?.email) {
-      toast.error('Please continue with Google to auto-fill your email');
-      return;
-    }
-    
+
     if (!formData.name || !formData.email || !formData.phone || !formData.password) {
       toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (!validateGmail(formData.email)) {
+      toast.error('Please use a valid Gmail address');
+      return;
+    }
+
+    if (!otpSent) {
+      toast.error('Please send OTP first');
+      return;
+    }
+
+    if (!formData.otp) {
+      toast.error('Please enter the OTP');
       return;
     }
 
@@ -66,7 +114,43 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    const result = await signup(formData);
+
+    // First verify OTP
+    try {
+      console.log('Verifying OTP before signup...');
+      const otpResponse = await fetch('/api/otp/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email, otp: formData.otp }),
+      });
+
+      const otpData = await otpResponse.json();
+      console.log('OTP verification response:', otpData);
+
+      if (!otpData.success) {
+        toast.error(otpData.error || 'Invalid OTP');
+        setLoading(false);
+        return;
+      }
+
+      toast.success('OTP verified! Creating your account...');
+    } catch (otpError) {
+      console.error('OTP verification error:', otpError);
+      toast.error('Failed to verify OTP');
+      setLoading(false);
+      return;
+    }
+
+    // OTP verified, now proceed with signup
+    const signupData = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+    };
+    const result = await signup(signupData);
     setLoading(false);
 
     if (result.success) {
@@ -84,14 +168,6 @@ export default function SignupPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-3xl font-bold text-center mb-2">Create Account</h2>
           <p className="text-gray-600 text-center mb-8">Join ServEx today</p>
-
-          <button
-            type="button"
-            onClick={() => signIn('google', { callbackUrl: '/signup' })}
-            className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition mb-6"
-          >
-            Continue with Google
-          </button>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
@@ -112,26 +188,53 @@ export default function SignupPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                Gmail Address
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                  placeholder={session?.user?.email ? "your@email.com" : "Connect with Google to fill"}
-                  readOnly
-                  disabled={!session?.user?.email}
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    placeholder="yourname@gmail.com"
+                    disabled={otpSent}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendOTP}
+                  disabled={otpLoading || !formData.email || otpSent}
+                  className="px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  {otpLoading ? 'Sending...' : otpSent ? 'Sent' : 'Send OTP'}
+                </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                {session?.user?.email
-                  ? 'Email fetched from Google and locked.'
-                  : 'Email cannot be edited. Click Continue with Google to fill this automatically.'}
+                Only Gmail addresses are accepted. OTP will be sent to verify your email.
               </p>
             </div>
+
+            {otpSent && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  OTP Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.otp}
+                  onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                />
+              <p className="text-xs text-gray-500 mt-1">
+                Check your Gmail inbox and spam folder for the verification code. The code expires in 5 minutes.
+              </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
