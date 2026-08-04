@@ -51,7 +51,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={isAuthenticated ? "/home" : "/"} className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-pink-600">ServEx</div>
+            <div className="text-2xl font-bold text-pink-600">Omniserve</div>
           </Link>
 
           {/* Location - Only show on home page */}
