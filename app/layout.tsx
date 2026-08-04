@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>ServEx - On-Demand Services & Delivery</title>
+        <title>Omniserve- On-Demand Services & Delivery</title>
         <meta name="description" content="Order from your favorite stores and get delivery to your doorstep" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
