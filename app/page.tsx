@@ -189,7 +189,7 @@ export default function LandingPage() {
                 FOR STORE OWNERS
               </div>
               <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-                Grow Your Business with ServEx
+                Grow Your Business with Omniserve
               </h2>
               <p className="text-xl text-gray-600 mb-8">
                 Join Malolos' leading delivery platform and reach more customers in your barangay and beyond. Manage orders, track deliveries, and grow your revenue with our easy-to-use store dashboard.
